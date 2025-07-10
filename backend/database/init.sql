@@ -108,14 +108,21 @@ CREATE TABLE visit_responses (
 CREATE TABLE visit_logs (
     id                  INT AUTO_INCREMENT,
     
-    scanner_profile_id  INT NOT NULL,
-    response_id         INT NOT NULL,
+    qr_code_id          INT NOT NULL,
 
     visited_at          TIMESTAMP    DEFAULT CURRENT_TIMESTAMP,
 
     PRIMARY KEY (id),
-    FOREIGN KEY (scanner_profile_id)    REFERENCES profiles(id),
-    FOREIGN KEY (response_id)           REFERENCES visit_responses(id)
+    FOREIGN KEY (qr_code_id)    REFERENCES qr_codes(id)
+);
+
+CREATE TABLE qr_codes (
+  id             INT AUTO_INCREMENT PRIMARY KEY,
+  response_id    INT NOT NULL,
+  code           VARCHAR(200) NOT NULL UNIQUE,
+  expires_at     DATETIME    NOT NULL,
+  created_at     TIMESTAMP   DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (response_id) REFERENCES visit_responses(id)
 );
 
 CREATE TABLE inspection_forms (
@@ -161,3 +168,16 @@ CREATE TABLE inspection_form_field_options (
   updated_at   TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   FOREIGN KEY (field_id) REFERENCES inspection_form_fields(id)
 );
+
+
+
+CREATE TABLE email_verifications (
+  id            INT AUTO_INCREMENT PRIMARY KEY,
+  email         VARCHAR(255)    NOT NULL,
+  token         VARCHAR(100) NOT NULL UNIQUE,
+  expires_at    DATETIME    NOT NULL,
+  used          BOOLEAN     NOT NULL DEFAULT FALSE,
+  created_at    TIMESTAMP   DEFAULT CURRENT_TIMESTAMP,
+);
+
+-- INDEX 추가 예정 --
