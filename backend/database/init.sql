@@ -12,34 +12,6 @@ DROP TABLE IF EXISTS inspection_forms;
 DROP TABLE IF EXISTS email_verifications;
 DROP TABLE IF EXISTS users;
 DROP TABLE IF EXISTS profile_companies;
-CREATE TABLE users (
-    id               INT             AUTO_INCREMENT,
-    email            VARCHAR(255)    NOT NULL UNIQUE,
-    password         VARCHAR(255)    NOT NULL,
-    name             VARCHAR(100)    NOT NULL,
-    phone            VARCHAR(20)     UNIQUE,
-
-    created_at       TIMESTAMP       DEFAULT CURRENT_TIMESTAMP,
-    updated_at       TIMESTAMP       DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-
-    PRIMARY KEY (id)
-);
-
-CREATE TABLE social_identities (
-  id                   INT AUTO_INCREMENT PRIMARY KEY,
-  user_id              INT NOT NULL,
-  provider             VARCHAR(50) NOT NULL,      -- google, facebook, kakao 등
-  provider_user_id     VARCHAR(100) NOT NULL,     -- 소셜 계정 고유 ID
-  access_token         VARCHAR(500),
-  refresh_token        VARCHAR(500),
-  token_expires_at     DATETIME,
-  profile_data         JSON,                      -- 소셜에서 받은 프로필 정보 등
-  created_at           TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  updated_at           TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  UNIQUE(provider, provider_user_id),
-  FOREIGN KEY (user_id) REFERENCES users(id)
-);
-
 
 CREATE TABLE companies (
     id               INT             AUTO_INCREMENT,
@@ -60,30 +32,42 @@ CREATE TABLE companies (
     PRIMARY KEY (id)
 );
 
-CREATE TABLE profiles (
+CREATE TABLE users (
     id               INT             AUTO_INCREMENT,
+    email            VARCHAR(255)    NOT NULL UNIQUE,
+    password         VARCHAR(255)    NOT NULL,
+    name             VARCHAR(100)    NOT NULL,
+    phone            VARCHAR(20)     UNIQUE,
     job_title        VARCHAR(50)     NOT NULL,
     department       VARCHAR(50),
     role             VARCHAR(50),
     description      VARCHAR(100),
     is_accepted      BOOLEAN NOT NULL DEFAULT FALSE,
 
-    user_id          INT             NOT NULL,
+    company_id       INT,
 
     created_at       TIMESTAMP       DEFAULT CURRENT_TIMESTAMP,
     updated_at       TIMESTAMP       DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
 
-    PRIMARY KEY (id),
-    FOREIGN KEY (user_id)    REFERENCES users(id)
+    PRIMARY KEY (id)
+    FOREIGN KEY (company_id) REFERENCES companies(id)
 );
 
-CREATE TABLE profile_companies (
-  profile_id INT NOT NULL,
-  company_id INT NOT NULL,
-  PRIMARY KEY (profile_id, company_id),
-  FOREIGN KEY (profile_id) REFERENCES profiles(id),
-  FOREIGN KEY (company_id) REFERENCES companies(id)
+CREATE TABLE social_identities (
+  id                   INT AUTO_INCREMENT PRIMARY KEY,
+  user_id              INT NOT NULL,
+  provider             VARCHAR(50) NOT NULL,      -- google, facebook, kakao 등
+  provider_user_id     VARCHAR(100) NOT NULL,     -- 소셜 계정 고유 ID
+  access_token         VARCHAR(500),
+  refresh_token        VARCHAR(500),
+  token_expires_at     DATETIME,
+  profile_data         JSON,                      -- 소셜에서 받은 프로필 정보 등
+  created_at           TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at           TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  UNIQUE(provider, provider_user_id),
+  FOREIGN KEY (user_id) REFERENCES users(id)
 );
+
 
 
 CREATE TABLE images (
@@ -102,13 +86,13 @@ CREATE TABLE inspection_forms (
     description      VARCHAR(500),
     is_editable      BOOLEAN NOT NULL DEFAULT TRUE,
 
-    profile_id       INT NOT NULL,
+    user_id       INT NOT NULL,
     
     created_at       TIMESTAMP    DEFAULT CURRENT_TIMESTAMP,
     updated_at       TIMESTAMP    DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
 
     PRIMARY KEY (id),
-    FOREIGN KEY (profile_id) REFERENCES profiles(id)
+    FOREIGN KEY (user_id) REFERENCES users(id)
 );
 
 CREATE TABLE visit_requests (
@@ -120,7 +104,7 @@ CREATE TABLE visit_requests (
     is_editable      BOOLEAN NOT NULL DEFAULT TRUE,
 
     company_id      INT                 NOT NULL,
-    profile_id      INT                 NOT NULL,
+    user_id      INT                 NOT NULL,
     forms_id        INT                 NOT NULL,
 
     created_at      TIMESTAMP    DEFAULT CURRENT_TIMESTAMP,
@@ -128,7 +112,7 @@ CREATE TABLE visit_requests (
 
     PRIMARY KEY (id),
     FOREIGN KEY (company_id) REFERENCES companies(id),
-    FOREIGN KEY (profile_id) REFERENCES profiles(id),
+    FOREIGN KEY (user_id) REFERENCES users(id),
     FOREIGN KEY (forms_id) REFERENCES inspection_forms(id)
 );
 
@@ -144,14 +128,14 @@ CREATE TABLE visit_responses (
     is_accepted      BOOLEAN NOT NULL DEFAULT FALSE,
     reason           VARCHAR(100),
 
-    profile_id       INT NOT NULL,
+    user_id       INT NOT NULL,
     request_id       INT NOT NULL,
 
     created_at       TIMESTAMP    DEFAULT CURRENT_TIMESTAMP,
     updated_at       TIMESTAMP    DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     
     PRIMARY KEY (id),
-    FOREIGN KEY (profile_id)        REFERENCES profiles(id),
+    FOREIGN KEY (user_id)        REFERENCES users(id),
     FOREIGN KEY (request_id)        REFERENCES visit_requests(id)
 );
 

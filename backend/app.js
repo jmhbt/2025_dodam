@@ -1,4 +1,6 @@
 const express = require("express");
+const redisClient = require('./utils/redisClient');
+
 const app = express();
 
 const userRouter = require('./swagger/docs/user');
