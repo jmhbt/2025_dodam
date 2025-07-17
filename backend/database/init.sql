@@ -11,6 +11,22 @@ CREATE TABLE users (
     PRIMARY KEY (id)
 );
 
+CREATE TABLE social_identities (
+  id                   INT AUTO_INCREMENT PRIMARY KEY,
+  user_id              INT NOT NULL,
+  provider             VARCHAR(50) NOT NULL,      -- google, facebook, kakao 등
+  provider_user_id     VARCHAR(100) NOT NULL,     -- 소셜 계정 고유 ID
+  access_token         VARCHAR(500),
+  refresh_token        VARCHAR(500),
+  token_expires_at     DATETIME,
+  profile_data         JSON,                      -- 소셜에서 받은 프로필 정보 등
+  created_at           TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at           TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  UNIQUE(provider, provider_user_id),
+  FOREIGN KEY (user_id) REFERENCES users(id)
+);
+
+
 CREATE TABLE profiles (
     id               INT             AUTO_INCREMENT,
     job_title        VARCHAR(50)     NOT NULL,
@@ -39,6 +55,7 @@ CREATE TABLE companies (
     ceo_name         VARCHAR(100)    NOT NULL,
     ceo_phone        VARCHAR(20)     NOT NULL,
     ceo_email        VARCHAR(100)    NOT NULL,
+    headcount        INT             NOT NULL,
 
     manager_id       INT             NOT NULL,
     
@@ -60,6 +77,7 @@ CREATE TABLE visit_requests (
 
     company_id      INT                 NOT NULL,
     profile_id      INT                 NOT NULL,
+    forms_id        INT                 NOT NULL,
 
     created_at      TIMESTAMP    DEFAULT CURRENT_TIMESTAMP,
     updated_at      TIMESTAMP    DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -67,20 +85,21 @@ CREATE TABLE visit_requests (
     PRIMARY KEY (id),
     FOREIGN KEY (company_id) REFERENCES companies(id)
     FOREIGN KEY (profile_id) REFERENCES profiles(id)
+    FOREIGN KEY (forms_id) REFERENCES inspection_forms(id)
 );
 
-CREATE TABLE visit_request_photos (
-    id               INT            AUTO_INCREMENT,
-    photo_url        VARCHAR(2048)  NOT NULL,
-    visit_request_id INT          NOT NULL,
-
-    uploaded_at      TIMESTAMP    DEFAULT CURRENT_TIMESTAMP,
-
-    
-
-    PRIMARY KEY (id),
-    FOREIGN KEY (visit_request_id) REFERENCES visit_requests(id)
+CREATE TABLE images (
+  id                INT AUTO_INCREMENT PRIMARY KEY,
+  url               VARCHAR(2048) NOT NULL,
+  imageable_id      INT NOT NULL,
+  imageable_type    VARCHAR(50) NOT NULL,
+  purpose           VARCHAR(50),          -- ex: "profile", "company", "visit_request", "inspection"
+  metadata          JSON NULL,
+  created_at        TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+
+
 
 CREATE TABLE visit_responses (
     id               INT AUTO_INCREMENT,
@@ -131,13 +150,13 @@ CREATE TABLE inspection_forms (
     description      VARCHAR(500),
     is_editable      BOOLEAN NOT NULL DEFAULT TRUE,
 
-    request_id       INT NOT NULL,
+    profile_id       INT NOT NULL,
     
     created_at       TIMESTAMP    DEFAULT CURRENT_TIMESTAMP,
     updated_at       TIMESTAMP    DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
 
     PRIMARY KEY (id),
-    FOREIGN KEY (request_id) REFERENCES visit_requests(id)
+    FOREIGN KEY (profile_id) REFERENCES profiles(id)
 );
 
 CREATE TABLE inspection_form_fields (
@@ -180,4 +199,5 @@ CREATE TABLE email_verifications (
   created_at    TIMESTAMP   DEFAULT CURRENT_TIMESTAMP,
 );
 
--- INDEX 추가 예정 --
+-- 인덱스 최적화
+CREATE INDEX idx_images_imageable ON images(imageable_type, imageable_id);
