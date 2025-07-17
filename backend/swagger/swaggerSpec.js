@@ -14,7 +14,7 @@ const options = {
       },
     ],
   },
-  apis: ["./backend/routes/*.js"], // Swagger 주석이 들어가는 라우터 경로
+  apis: ["./backend/swagger/docs/*.js"], // Swagger 주석이 들어가는 라우터 경로
 };
 
 const specs = swaggerJSDoc(options);

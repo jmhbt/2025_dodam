@@ -1,3 +1,17 @@
+DROP TABLE IF EXISTS inspection_form_field_options;
+DROP TABLE IF EXISTS inspection_form_fields;
+DROP TABLE IF EXISTS social_identities;
+DROP TABLE IF EXISTS profiles;
+DROP TABLE IF EXISTS companies;
+DROP TABLE IF EXISTS visit_requests;
+DROP TABLE IF EXISTS images;
+DROP TABLE IF EXISTS visit_responses;
+DROP TABLE IF EXISTS visit_logs;
+DROP TABLE IF EXISTS qr_codes;
+DROP TABLE IF EXISTS inspection_forms;
+DROP TABLE IF EXISTS email_verifications;
+DROP TABLE IF EXISTS users;
+DROP TABLE IF EXISTS profile_companies;
 CREATE TABLE users (
     id               INT             AUTO_INCREMENT,
     email            VARCHAR(255)    NOT NULL UNIQUE,
@@ -27,25 +41,6 @@ CREATE TABLE social_identities (
 );
 
 
-CREATE TABLE profiles (
-    id               INT             AUTO_INCREMENT,
-    job_title        VARCHAR(50)     NOT NULL,
-    department       VARCHAR(50),
-    role             VARCHAR(50),
-    description      VARCHAR(100),
-    is_accepted      BOOLEAN NOT NULL DEFAULT FALSE,
-
-    user_id          INT             NOT NULL,
-    company_id       INT                 NULL,
-
-    created_at       TIMESTAMP       DEFAULT CURRENT_TIMESTAMP,
-    updated_at       TIMESTAMP       DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-
-    PRIMARY KEY (id),
-    FOREIGN KEY (user_id)    REFERENCES users(id)
-    FOREIGN KEY (company_id) REFERENCES companies(id)
-);
-
 CREATE TABLE companies (
     id               INT             AUTO_INCREMENT,
     name             VARCHAR(100)    NOT NULL UNIQUE,
@@ -62,10 +57,59 @@ CREATE TABLE companies (
     created_at       TIMESTAMP    DEFAULT CURRENT_TIMESTAMP,
     updated_at       TIMESTAMP    DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     
-    PRIMARY KEY (id),
-    FOREIGN KEY (manager_id)   REFERENCES users(id)
+    PRIMARY KEY (id)
 );
 
+CREATE TABLE profiles (
+    id               INT             AUTO_INCREMENT,
+    job_title        VARCHAR(50)     NOT NULL,
+    department       VARCHAR(50),
+    role             VARCHAR(50),
+    description      VARCHAR(100),
+    is_accepted      BOOLEAN NOT NULL DEFAULT FALSE,
+
+    user_id          INT             NOT NULL,
+
+    created_at       TIMESTAMP       DEFAULT CURRENT_TIMESTAMP,
+    updated_at       TIMESTAMP       DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+
+    PRIMARY KEY (id),
+    FOREIGN KEY (user_id)    REFERENCES users(id)
+);
+
+CREATE TABLE profile_companies (
+  profile_id INT NOT NULL,
+  company_id INT NOT NULL,
+  PRIMARY KEY (profile_id, company_id),
+  FOREIGN KEY (profile_id) REFERENCES profiles(id),
+  FOREIGN KEY (company_id) REFERENCES companies(id)
+);
+
+
+CREATE TABLE images (
+  id                INT AUTO_INCREMENT PRIMARY KEY,
+  url               VARCHAR(2048) NOT NULL,
+  imageable_id      INT NOT NULL,
+  imageable_type    VARCHAR(50) NOT NULL,
+  purpose           VARCHAR(50),          -- ex: "profile", "company", "visit_request", "inspection"
+  metadata          JSON NULL,
+  created_at        TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE inspection_forms (
+    id               INT AUTO_INCREMENT,
+    name             VARCHAR(50) NOT NULL,
+    description      VARCHAR(500),
+    is_editable      BOOLEAN NOT NULL DEFAULT TRUE,
+
+    profile_id       INT NOT NULL,
+    
+    created_at       TIMESTAMP    DEFAULT CURRENT_TIMESTAMP,
+    updated_at       TIMESTAMP    DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+
+    PRIMARY KEY (id),
+    FOREIGN KEY (profile_id) REFERENCES profiles(id)
+);
 
 CREATE TABLE visit_requests (
     id              INT                 AUTO_INCREMENT,
@@ -83,23 +127,10 @@ CREATE TABLE visit_requests (
     updated_at      TIMESTAMP    DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
 
     PRIMARY KEY (id),
-    FOREIGN KEY (company_id) REFERENCES companies(id)
-    FOREIGN KEY (profile_id) REFERENCES profiles(id)
+    FOREIGN KEY (company_id) REFERENCES companies(id),
+    FOREIGN KEY (profile_id) REFERENCES profiles(id),
     FOREIGN KEY (forms_id) REFERENCES inspection_forms(id)
 );
-
-CREATE TABLE images (
-  id                INT AUTO_INCREMENT PRIMARY KEY,
-  url               VARCHAR(2048) NOT NULL,
-  imageable_id      INT NOT NULL,
-  imageable_type    VARCHAR(50) NOT NULL,
-  purpose           VARCHAR(50),          -- ex: "profile", "company", "visit_request", "inspection"
-  metadata          JSON NULL,
-  created_at        TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
-
-
 
 CREATE TABLE visit_responses (
     id               INT AUTO_INCREMENT,
@@ -120,8 +151,19 @@ CREATE TABLE visit_responses (
     updated_at       TIMESTAMP    DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     
     PRIMARY KEY (id),
-    FOREIGN KEY (profile_id)        REFERENCES profiles(id)
+    FOREIGN KEY (profile_id)        REFERENCES profiles(id),
     FOREIGN KEY (request_id)        REFERENCES visit_requests(id)
+);
+
+
+
+CREATE TABLE qr_codes (
+  id             INT AUTO_INCREMENT PRIMARY KEY,
+  response_id    INT NOT NULL,
+  code           VARCHAR(200) NOT NULL UNIQUE,
+  expires_at     DATETIME    NOT NULL,
+  created_at     TIMESTAMP   DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (response_id) REFERENCES visit_responses(id)
 );
 
 CREATE TABLE visit_logs (
@@ -135,29 +177,7 @@ CREATE TABLE visit_logs (
     FOREIGN KEY (qr_code_id)    REFERENCES qr_codes(id)
 );
 
-CREATE TABLE qr_codes (
-  id             INT AUTO_INCREMENT PRIMARY KEY,
-  response_id    INT NOT NULL,
-  code           VARCHAR(200) NOT NULL UNIQUE,
-  expires_at     DATETIME    NOT NULL,
-  created_at     TIMESTAMP   DEFAULT CURRENT_TIMESTAMP,
-  FOREIGN KEY (response_id) REFERENCES visit_responses(id)
-);
 
-CREATE TABLE inspection_forms (
-    id               INT AUTO_INCREMENT,
-    name             VARCHAR(50) NOT NULL,
-    description      VARCHAR(500),
-    is_editable      BOOLEAN NOT NULL DEFAULT TRUE,
-
-    profile_id       INT NOT NULL,
-    
-    created_at       TIMESTAMP    DEFAULT CURRENT_TIMESTAMP,
-    updated_at       TIMESTAMP    DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-
-    PRIMARY KEY (id),
-    FOREIGN KEY (profile_id) REFERENCES profiles(id)
-);
 
 CREATE TABLE inspection_form_fields (
   id           INT AUTO_INCREMENT PRIMARY KEY,
@@ -196,7 +216,7 @@ CREATE TABLE email_verifications (
   token         VARCHAR(100) NOT NULL UNIQUE,
   expires_at    DATETIME    NOT NULL,
   used          BOOLEAN     NOT NULL DEFAULT FALSE,
-  created_at    TIMESTAMP   DEFAULT CURRENT_TIMESTAMP,
+  created_at    TIMESTAMP   DEFAULT CURRENT_TIMESTAMP
 );
 
 -- 인덱스 최적화
