@@ -1,10 +1,11 @@
 const express = require("express");
 const redisClient = require('./utils/redisClient');
+const userRouter = require('./swagger/docs/user');
+const swaggerRouter = require('./swagger/swaggerRouter');
+
 
 const app = express();
 
-const userRouter = require('./swagger/docs/user');
-const swaggerRouter = require('./swagger/swaggerRouter');
 
 app.use(express.json());
 app.use('/users', userRouter);

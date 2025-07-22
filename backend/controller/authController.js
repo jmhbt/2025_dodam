@@ -11,7 +11,7 @@ exports.login = async (req, res) => {
 
   await redisClient.set(refreshToken, user.id, { EX: 7 * 24 * 3600 });
 
-  res.json({ accessToken, refreshToken });
+  res.jason({ accessToken, refreshToken });
 };
 
 exports.refresh = async (req, res) => {

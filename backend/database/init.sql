@@ -67,8 +67,6 @@ CREATE TABLE social_identities (
   FOREIGN KEY (user_id) REFERENCES users(id)
 );
 
-
-
 CREATE TABLE images (
   id                INT AUTO_INCREMENT PRIMARY KEY,
   url               VARCHAR(2048) NOT NULL,
@@ -138,29 +136,20 @@ CREATE TABLE visit_responses (
     FOREIGN KEY (request_id)        REFERENCES visit_requests(id)
 );
 
-
-
-CREATE TABLE qr_codes (
-  id             INT AUTO_INCREMENT PRIMARY KEY,
-  response_id    INT NOT NULL,
-  code           VARCHAR(200) NOT NULL UNIQUE,
-  expires_at     DATETIME    NOT NULL,
-  created_at     TIMESTAMP   DEFAULT CURRENT_TIMESTAMP,
-  FOREIGN KEY (response_id) REFERENCES visit_responses(id)
-);
-
 CREATE TABLE visit_logs (
     id                  INT AUTO_INCREMENT,
-    
-    qr_code_id          INT NOT NULL,
+    type                ENUM('entry','exit') NOT NULL,
 
-    visited_at          TIMESTAMP    DEFAULT CURRENT_TIMESTAMP,
+    user_id             INT NOT NULL,
+    response_id         INT NOt NULL,
+    
+    issued_at          TIMESTAMP    DEFAULT CURRENT_TIMESTAMP,
 
     PRIMARY KEY (id),
+    FOREIGN KEY (user_id)       REFERENCES user_id(id),
+    FOREIGN KEY (response_id)   REFERENCES visit_responses(id),
     FOREIGN KEY (qr_code_id)    REFERENCES qr_codes(id)
 );
-
-
 
 CREATE TABLE inspection_form_fields (
   id           INT AUTO_INCREMENT PRIMARY KEY,
@@ -175,8 +164,10 @@ CREATE TABLE inspection_form_fields (
   is_required  BOOLEAN NOT NULL DEFAULT FALSE,      -- 필수 여부
   sort_order   INT  NOT NULL DEFAULT 0,            -- 문항 순서 지정
   settings     JSON  NULL,                         -- 추가 옵션(e.g. 선형배율의 min/max/step)
+
   created_at   TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at   TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+
   FOREIGN KEY (form_id) REFERENCES inspection_forms(id)
 );
 
@@ -186,20 +177,29 @@ CREATE TABLE inspection_form_field_options (
   option_label VARCHAR(200) NOT NULL,               -- 사용자에게 보일 옵션 텍스트
   option_value VARCHAR(200) NULL,                   -- 내부 값(코드) 필요 시
   sort_order   INT NOT NULL DEFAULT 0,              -- 옵션 순서 지정
-  created_at   TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  updated_at   TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+
   FOREIGN KEY (field_id) REFERENCES inspection_form_fields(id)
 );
 
+CREATE TABLE form_responses (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  form_id INT NOT NULL,
+  user_id INT NOT NULL,
+  submitted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (form_id) REFERENCES inspection_forms(id),
+  FOREIGN KEY (user_id) REFERENCES users(id)
+);
 
-
-CREATE TABLE email_verifications (
-  id            INT AUTO_INCREMENT PRIMARY KEY,
-  email         VARCHAR(255)    NOT NULL,
-  token         VARCHAR(100) NOT NULL UNIQUE,
-  expires_at    DATETIME    NOT NULL,
-  used          BOOLEAN     NOT NULL DEFAULT FALSE,
-  created_at    TIMESTAMP   DEFAULT CURRENT_TIMESTAMP
+CREATE TABLE field_answers (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  response_id INT NOT NULL,              -- form_responses.id
+  field_id INT NOT NULL,                 -- inspection_form_fields.id
+  option_id INT NULL,                    -- inspection_form_field_options.id (선택형)
+  answer_text TEXT NULL,                 -- 주관식 응답
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (response_id) REFERENCES form_responses(id),
+  FOREIGN KEY (field_id) REFERENCES inspection_form_fields(id),
+  FOREIGN KEY (option_id) REFERENCES inspection_form_field_options(id)
 );
 
 -- 인덱스 최적화
