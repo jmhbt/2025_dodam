@@ -24,8 +24,6 @@ CREATE TABLE companies (
     ceo_email        VARCHAR(100)    NOT NULL,
     headcount        INT             NOT NULL,
 
-    manager_id       INT             NOT NULL,
-    
     created_at       TIMESTAMP    DEFAULT CURRENT_TIMESTAMP,
     updated_at       TIMESTAMP    DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     
@@ -41,6 +39,7 @@ CREATE TABLE users (
     job_title        VARCHAR(50)     NOT NULL,
     department       VARCHAR(50),
     role             VARCHAR(50),
+    system_role      VARCHAR(50),
     description      VARCHAR(100),
     is_accepted      BOOLEAN NOT NULL DEFAULT FALSE,
 
@@ -101,10 +100,10 @@ CREATE TABLE visit_requests (
     location        VARCHAR(100)        NOT NULL,
     product         VARCHAR(100)        NOT NULL,
     context         VARCHAR(1000)       NOT NULL,
-    is_editable      BOOLEAN NOT NULL DEFAULT TRUE,
+    is_editable     BOOLEAN NOT NULL DEFAULT TRUE,
 
     company_id      INT                 NOT NULL,
-    user_id      INT                 NOT NULL,
+    user_id         INT                 NOT NULL,
     forms_id        INT                 NOT NULL,
 
     created_at      TIMESTAMP    DEFAULT CURRENT_TIMESTAMP,
