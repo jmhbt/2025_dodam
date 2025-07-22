@@ -93,6 +93,19 @@
  *           description: 추가 오류 정보
  *           example: {"field": "email", "issue": "이미 사용중인 이메일입니다."}
  *     
+ *     SuccessResponse:
+ *       type: object
+ *       properties:
+ *         success:
+ *           type: boolean
+ *           example: true
+ *         message:
+ *           type: string
+ *           example: "작업이 성공적으로 완료되었습니다."
+ *         data:
+ *           type: object
+ *           description: 응답 데이터
+ *     
  *     Pagination:
  *       type: object
  *       properties:
@@ -252,6 +265,57 @@
  *           type: string
  *           format: date-time
  *           example: "2024-01-15T10:30:00Z"
+ *     
+ *     VisitRequestCreate:
+ *       type: object
+ *       required:
+ *         - title
+ *         - location
+ *         - product
+ *         - context
+ *       properties:
+ *         title:
+ *           type: string
+ *           maxLength: 100
+ *           example: "시설 점검 방문"
+ *         location:
+ *           type: string
+ *           maxLength: 100
+ *           example: "1층 로비"
+ *         product:
+ *           type: string
+ *           maxLength: 100
+ *           example: "보안 시스템"
+ *         context:
+ *           type: string
+ *           maxLength: 500
+ *           example: "정기 보안 점검을 위한 방문입니다."
+ *         company_id:
+ *           type: integer
+ *           example: 1
+ *         forms_id:
+ *           type: integer
+ *           example: 1
+ *     
+ *     VisitRequestUpdate:
+ *       type: object
+ *       properties:
+ *         title:
+ *           type: string
+ *           maxLength: 100
+ *         location:
+ *           type: string
+ *           maxLength: 100
+ *         product:
+ *           type: string
+ *           maxLength: 100
+ *         context:
+ *           type: string
+ *           maxLength: 500
+ *         is_editable:
+ *           type: boolean
+ *         forms_id:
+ *           type: integer
  *     
  *     # 방문 응답 스키마
  *     VisitResponse:
@@ -451,6 +515,38 @@
  *           type: string
  *           format: date-time
  *           example: "2024-01-15T14:30:00Z"
+ *     
+ *     FormResponseCreate:
+ *       type: object
+ *       required:
+ *         - form_id
+ *         - answers
+ *       properties:
+ *         form_id:
+ *           type: integer
+ *           example: 1
+ *           description: 응답할 폼 ID
+ *         answers:
+ *           type: array
+ *           items:
+ *             type: object
+ *             required:
+ *               - field_id
+ *             properties:
+ *               field_id:
+ *                 type: integer
+ *                 description: 답변할 필드 ID
+ *                 example: 1
+ *               option_id:
+ *                 type: integer
+ *                 nullable: true
+ *                 description: 선택형 질문의 선택된 옵션 ID
+ *                 example: 1
+ *               answer_text:
+ *                 type: string
+ *                 nullable: true
+ *                 description: 주관식 답변 텍스트
+ *                 example: "모든 출입문이 정상적으로 잠겨있습니다."
  *     
  *     # 필드 답변 스키마
  *     FieldAnswer:
