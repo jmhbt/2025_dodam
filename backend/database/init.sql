@@ -48,7 +48,7 @@ CREATE TABLE users (
     created_at       TIMESTAMP       DEFAULT CURRENT_TIMESTAMP,
     updated_at       TIMESTAMP       DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
 
-    PRIMARY KEY (id)
+    PRIMARY KEY (id),
     FOREIGN KEY (company_id) REFERENCES companies(id)
 );
 
@@ -141,7 +141,7 @@ CREATE TABLE visit_logs (
     type                ENUM('entry','exit') NOT NULL,
 
     user_id             INT NOT NULL,
-    response_id         INT NOt NULL,
+    response_id         INT NOT NULL,
     
     issued_at          TIMESTAMP    DEFAULT CURRENT_TIMESTAMP,
 
@@ -160,7 +160,7 @@ CREATE TABLE inspection_form_fields (
      'linear_scale','mc_grid','cb_grid',
      'date','time'
   ) NOT NULL,                                      -- 질문 유형
-  is_required  BOOLEAN NOT NULL DEFAULT FALSE,      -- 필수 여부
+  is_required  BOOLEAN NOT NULL DEFAULT FALSE,     -- 필수 여부
   sort_order   INT  NOT NULL DEFAULT 0,            -- 문항 순서 지정
   settings     JSON  NULL,                         -- 추가 옵션(e.g. 선형배율의 min/max/step)
 
