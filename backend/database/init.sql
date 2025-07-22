@@ -1,18 +1,3 @@
-DROP TABLE IF EXISTS inspection_form_field_options;
-DROP TABLE IF EXISTS inspection_form_fields;
-DROP TABLE IF EXISTS social_identities;
-DROP TABLE IF EXISTS profiles;
-DROP TABLE IF EXISTS companies;
-DROP TABLE IF EXISTS visit_requests;
-DROP TABLE IF EXISTS images;
-DROP TABLE IF EXISTS visit_responses;
-DROP TABLE IF EXISTS visit_logs;
-DROP TABLE IF EXISTS qr_codes;
-DROP TABLE IF EXISTS inspection_forms;
-DROP TABLE IF EXISTS email_verifications;
-DROP TABLE IF EXISTS users;
-DROP TABLE IF EXISTS profile_companies;
-
 CREATE TABLE companies (
     id               INT             AUTO_INCREMENT,
     name             VARCHAR(100)    NOT NULL UNIQUE,
@@ -36,7 +21,7 @@ CREATE TABLE users (
     password         VARCHAR(255)    NOT NULL,
     name             VARCHAR(100)    NOT NULL,
     phone            VARCHAR(20)     UNIQUE,
-    job_title        VARCHAR(50)     NOT NULL,
+    job_title        VARCHAR(50),
     department       VARCHAR(50),
     role             VARCHAR(50),
     system_role      VARCHAR(50),
@@ -146,7 +131,7 @@ CREATE TABLE visit_logs (
     issued_at          TIMESTAMP    DEFAULT CURRENT_TIMESTAMP,
 
     PRIMARY KEY (id),
-    FOREIGN KEY (user_id)       REFERENCES user_id(id),
+    FOREIGN KEY (user_id)       REFERENCES users(id),
     FOREIGN KEY (response_id)   REFERENCES visit_responses(id)
 );
 
@@ -200,6 +185,3 @@ CREATE TABLE field_answers (
   FOREIGN KEY (field_id) REFERENCES inspection_form_fields(id),
   FOREIGN KEY (option_id) REFERENCES inspection_form_field_options(id)
 );
-
--- 인덱스 최적화
-CREATE INDEX idx_images_imageable ON images(imageable_type, imageable_id);
