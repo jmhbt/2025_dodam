@@ -147,8 +147,7 @@ CREATE TABLE visit_logs (
 
     PRIMARY KEY (id),
     FOREIGN KEY (user_id)       REFERENCES user_id(id),
-    FOREIGN KEY (response_id)   REFERENCES visit_responses(id),
-    FOREIGN KEY (qr_code_id)    REFERENCES qr_codes(id)
+    FOREIGN KEY (response_id)   REFERENCES visit_responses(id)
 );
 
 CREATE TABLE inspection_form_fields (
