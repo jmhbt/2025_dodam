@@ -1,0 +1,1739 @@
+openapi: 3.0.3
+info:
+  title: Visit Management API
+  description: |
+    방문 관리 및 점검 폼 시스템 API
+    
+    이 API는 회사 방문 요청, 승인, 점검 폼 작성 등의 기능을 제공합니다.
+    
+    ## 주요 기능
+    - 사용자 및 회사 관리
+    - 방문 요청 및 응답 처리
+    - 점검 폼 생성 및 응답 수집
+    - 이미지 업로드 및 관리
+    - 소셜 로그인 지원
+    
+  version: 2.0.0
+  contact:
+    name: API Support
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+
+servers:
+  - url: https://api.example.com/v1
+    description: Production server
+  - url: https://staging-api.example.com/v1
+    description: Staging server
+
+security:
+  - bearerAuth: []
+
+paths:
+  # 인증 관련
+  /auth/login:
+    post:
+      tags:
+        - Authentication
+      summary: 사용자 로그인
+      description: 이메일과 패스워드로 로그인하여 JWT 토큰을 받습니다.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+                - password
+              properties:
+                email:
+                  type: string
+                  format: email
+                  example: "user@example.com"
+                password:
+                  type: string
+                  format: password
+                  example: "password123"
+      responses:
+        '200':
+          description: 로그인 성공
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token:
+                    type: string
+                    example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                  user:
+                    $ref: '#/components/schemas/User'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /auth/register:
+    post:
+      tags:
+        - Authentication
+      summary: 사용자 회원가입
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserCreate'
+      responses:
+        '201':
+          description: 회원가입 성공
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /auth/social/{provider}:
+    post:
+      tags:
+        - Authentication
+      summary: 소셜 로그인
+      security: []
+      parameters:
+        - name: provider
+          in: path
+          required: true
+          schema:
+            type: string
+            enum: [google, facebook, kakao]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                access_token:
+                  type: string
+                  description: 소셜 플랫폼에서 받은 액세스 토큰
+      responses:
+        '200':
+          description: 소셜 로그인 성공
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token:
+                    type: string
+                  user:
+                    $ref: '#/components/schemas/User'
+
+  # 회사 관리
+  /companies:
+    get:
+      tags:
+        - Companies
+      summary: 회사 목록 조회
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/LimitParam'
+        - name: search
+          in: query
+          schema:
+            type: string
+          description: 회사명으로 검색
+      responses:
+        '200':
+          description: 회사 목록
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Company'
+                  pagination:
+                    $ref: '#/components/schemas/Pagination'
+
+    post:
+      tags:
+        - Companies
+      summary: 회사 등록
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CompanyCreate'
+      responses:
+        '201':
+          description: 회사 등록 성공
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Company'
+
+  /companies/{id}:
+    get:
+      tags:
+        - Companies
+      summary: 회사 상세 조회
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+      responses:
+        '200':
+          description: 회사 상세 정보
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Company'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    put:
+      tags:
+        - Companies
+      summary: 회사 정보 수정
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CompanyUpdate'
+      responses:
+        '200':
+          description: 회사 정보 수정 성공
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Company'
+
+    delete:
+      tags:
+        - Companies
+      summary: 회사 삭제
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+      responses:
+        '204':
+          description: 회사 삭제 성공
+
+  # 사용자 관리
+  /users:
+    get:
+      tags:
+        - Users
+      summary: 사용자 목록 조회
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/LimitParam'
+        - name: company_id
+          in: query
+          schema:
+            type: integer
+          description: 회사 ID로 필터링
+        - name: role
+          in: query
+          schema:
+            type: string
+          description: 역할로 필터링
+      responses:
+        '200':
+          description: 사용자 목록
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/User'
+                  pagination:
+                    $ref: '#/components/schemas/Pagination'
+
+  /users/{id}:
+    get:
+      tags:
+        - Users
+      summary: 사용자 상세 조회
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+      responses:
+        '200':
+          description: 사용자 상세 정보
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+
+    put:
+      tags:
+        - Users
+      summary: 사용자 정보 수정
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserUpdate'
+      responses:
+        '200':
+          description: 사용자 정보 수정 성공
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+
+  /users/{id}/approve:
+    patch:
+      tags:
+        - Users
+      summary: 사용자 승인
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+      responses:
+        '200':
+          description: 사용자 승인 성공
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+
+  # 방문 요청 관리
+  /visit-requests:
+    get:
+      tags:
+        - Visit Requests
+      summary: 방문 요청 목록 조회
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/LimitParam'
+        - name: company_id
+          in: query
+          schema:
+            type: integer
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [pending, approved, rejected]
+      responses:
+        '200':
+          description: 방문 요청 목록
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/VisitRequest'
+                  pagination:
+                    $ref: '#/components/schemas/Pagination'
+
+    post:
+      tags:
+        - Visit Requests
+      summary: 방문 요청 생성
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VisitRequestCreate'
+      responses:
+        '201':
+          description: 방문 요청 생성 성공
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VisitRequest'
+
+  /visit-requests/{id}:
+    get:
+      tags:
+        - Visit Requests
+      summary: 방문 요청 상세 조회
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+      responses:
+        '200':
+          description: 방문 요청 상세 정보
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VisitRequest'
+
+    put:
+      tags:
+        - Visit Requests
+      summary: 방문 요청 수정
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VisitRequestUpdate'
+      responses:
+        '200':
+          description: 방문 요청 수정 성공
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VisitRequest'
+
+    delete:
+      tags:
+        - Visit Requests
+      summary: 방문 요청 삭제
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+      responses:
+        '204':
+          description: 방문 요청 삭제 성공
+
+  # 방문 응답 관리
+  /visit-responses:
+    get:
+      tags:
+        - Visit Responses
+      summary: 방문 응답 목록 조회
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/LimitParam'
+        - name: request_id
+          in: query
+          schema:
+            type: integer
+          description: 방문 요청 ID로 필터링
+      responses:
+        '200':
+          description: 방문 응답 목록
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/VisitResponse'
+                  pagination:
+                    $ref: '#/components/schemas/Pagination'
+
+    post:
+      tags:
+        - Visit Responses
+      summary: 방문 응답 생성
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VisitResponseCreate'
+      responses:
+        '201':
+          description: 방문 응답 생성 성공
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VisitResponse'
+
+  /visit-responses/{id}:
+    get:
+      tags:
+        - Visit Responses
+      summary: 방문 응답 상세 조회
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+      responses:
+        '200':
+          description: 방문 응답 상세 정보
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VisitResponse'
+
+    put:
+      tags:
+        - Visit Responses
+      summary: 방문 응답 수정
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VisitResponseUpdate'
+      responses:
+        '200':
+          description: 방문 응답 수정 성공
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VisitResponse'
+
+  /visit-responses/{id}/approve:
+    patch:
+      tags:
+        - Visit Responses
+      summary: 방문 승인/거부
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - is_accepted
+              properties:
+                is_accepted:
+                  type: boolean
+                reason:
+                  type: string
+                  description: 거부 사유 (거부 시 필수)
+      responses:
+        '200':
+          description: 방문 승인/거부 처리 성공
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VisitResponse'
+
+  # 방문 로그
+  /visit-logs:
+    get:
+      tags:
+        - Visit Logs
+      summary: 방문 로그 조회
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/LimitParam'
+        - name: response_id
+          in: query
+          schema:
+            type: integer
+        - name: type
+          in: query
+          schema:
+            type: string
+            enum: [entry, exit]
+      responses:
+        '200':
+          description: 방문 로그 목록
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/VisitLog'
+                  pagination:
+                    $ref: '#/components/schemas/Pagination'
+
+    post:
+      tags:
+        - Visit Logs
+      summary: 방문 로그 생성 (입/출입 기록)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VisitLogCreate'
+      responses:
+        '201':
+          description: 방문 로그 생성 성공
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VisitLog'
+
+  # 점검 폼 관리
+  /inspection-forms:
+    get:
+      tags:
+        - Inspection Forms
+      summary: 점검 폼 목록 조회
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/LimitParam'
+        - name: user_id
+          in: query
+          schema:
+            type: integer
+          description: 작성자 ID로 필터링
+      responses:
+        '200':
+          description: 점검 폼 목록
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/InspectionForm'
+                  pagination:
+                    $ref: '#/components/schemas/Pagination'
+
+    post:
+      tags:
+        - Inspection Forms
+      summary: 점검 폼 생성
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InspectionFormCreate'
+      responses:
+        '201':
+          description: 점검 폼 생성 성공
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InspectionForm'
+
+  /inspection-forms/{id}:
+    get:
+      tags:
+        - Inspection Forms
+      summary: 점검 폼 상세 조회
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+      responses:
+        '200':
+          description: 점검 폼 상세 정보 (필드 포함)
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/InspectionForm'
+                  - type: object
+                    properties:
+                      fields:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/InspectionFormField'
+
+    put:
+      tags:
+        - Inspection Forms
+      summary: 점검 폼 수정
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InspectionFormUpdate'
+      responses:
+        '200':
+          description: 점검 폼 수정 성공
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InspectionForm'
+
+    delete:
+      tags:
+        - Inspection Forms
+      summary: 점검 폼 삭제
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+      responses:
+        '204':
+          description: 점검 폼 삭제 성공
+
+  /inspection-forms/{id}/fields:
+    post:
+      tags:
+        - Inspection Forms
+      summary: 점검 폼 필드 추가
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InspectionFormFieldCreate'
+      responses:
+        '201':
+          description: 필드 추가 성공
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InspectionFormField'
+
+  /inspection-form-fields/{id}:
+    put:
+      tags:
+        - Inspection Forms
+      summary: 점검 폼 필드 수정
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InspectionFormFieldUpdate'
+      responses:
+        '200':
+          description: 필드 수정 성공
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InspectionFormField'
+
+    delete:
+      tags:
+        - Inspection Forms
+      summary: 점검 폼 필드 삭제
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+      responses:
+        '204':
+          description: 필드 삭제 성공
+
+  # 폼 응답 관리
+  /form-responses:
+    get:
+      tags:
+        - Form Responses
+      summary: 폼 응답 목록 조회
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/LimitParam'
+        - name: form_id
+          in: query
+          schema:
+            type: integer
+          description: 폼 ID로 필터링
+        - name: user_id
+          in: query
+          schema:
+            type: integer
+          description: 응답자 ID로 필터링
+      responses:
+        '200':
+          description: 폼 응답 목록
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/FormResponse'
+                  pagination:
+                    $ref: '#/components/schemas/Pagination'
+
+    post:
+      tags:
+        - Form Responses
+      summary: 폼 응답 제출
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FormResponseCreate'
+      responses:
+        '201':
+          description: 폼 응답 제출 성공
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FormResponse'
+
+  /form-responses/{id}:
+    get:
+      tags:
+        - Form Responses
+      summary: 폼 응답 상세 조회
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+      responses:
+        '200':
+          description: 폼 응답 상세 정보 (답변 포함)
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/FormResponse'
+                  - type: object
+                    properties:
+                      answers:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/FieldAnswer'
+
+  # 이미지 관리
+  /images:
+    post:
+      tags:
+        - Images
+      summary: 이미지 업로드
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - file
+                - imageable_type
+                - imageable_id
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: 업로드할 이미지 파일
+                imageable_type:
+                  type: string
+                  enum: [user, company, visit_request, inspection]
+                  description: 이미지가 연결될 엔티티 타입
+                imageable_id:
+                  type: integer
+                  description: 이미지가 연결될 엔티티 ID
+                purpose:
+                  type: string
+                  description: 이미지 용도
+                  example: "profile"
+      responses:
+        '201':
+          description: 이미지 업로드 성공
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Image'
+
+  /images/{id}:
+    delete:
+      tags:
+        - Images
+      summary: 이미지 삭제
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+      responses:
+        '204':
+          description: 이미지 삭제 성공
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  parameters:
+    IdParam:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: integer
+        minimum: 1
+      description: 리소스 ID
+    
+    PageParam:
+      name: page
+      in: query
+      schema:
+        type: integer
+        minimum: 1
+        default: 1
+      description: 페이지 번호
+    
+    LimitParam:
+      name: limit
+      in: query
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 20
+      description: 페이지당 항목 수
+
+  responses:
+    BadRequest:
+      description: 잘못된 요청
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    
+    Unauthorized:
+      description: 인증 실패
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    
+    Forbidden:
+      description: 권한 없음
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    
+    NotFound:
+      description: 리소스를 찾을 수 없음
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    
+    InternalServerError:
+      description: 서버 오류
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+  schemas:
+    # 공통 스키마
+    Error:
+      type: object
+      required:
+        - message
+      properties:
+        message:
+          type: string
+          description: 오류 메시지
+        code:
+          type: string
+          description: 오류 코드
+        details:
+          type: object
+          description: 추가 오류 정보
+
+    Pagination:
+      type: object
+      properties:
+        current_page:
+          type: integer
+          example: 1
+        per_page:
+          type: integer
+          example: 20
+        total:
+          type: integer
+          example: 150
+        total_pages:
+          type: integer
+          example: 8
+
+    # 회사 스키마
+    Company:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        name:
+          type: string
+          example: "테크 컴퍼니"
+        address:
+          type: string
+          example: "서울시 강남구 테헤란로 123"
+        website:
+          type: string
+          format: uri
+          nullable: true
+          example: "https://example.com"
+        description:
+          type: string
+          example: "혁신적인 기술 회사"
+        ceo_name:
+          type: string
+          example: "김대표"
+        ceo_phone:
+          type: string
+          example: "010-1234-5678"
+        ceo_email:
+          type: string
+          format: email
+          example: "ceo@example.com"
+        headcount:
+          type: integer
+          example: 50
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    CompanyCreate:
+      type: object
+      required:
+        - name
+        - address
+        - description
+        - ceo_name
+        - ceo_phone
+        - ceo_email
+        - headcount
+      properties:
+        name:
+          type: string
+          maxLength: 100
+        address:
+          type: string
+          maxLength: 500
+        website:
+          type: string
+          format: uri
+          maxLength: 2048
+        description:
+          type: string
+          maxLength: 500
+        ceo_name:
+          type: string
+          maxLength: 100
+        ceo_phone:
+          type: string
+          maxLength: 20
+        ceo_email:
+          type: string
+          format: email
+          maxLength: 100
+        headcount:
+          type: integer
+          minimum: 1
+
+    CompanyUpdate:
+      type: object
+      properties:
+        name:
+          type: string
+          maxLength: 100
+        address:
+          type: string
+          maxLength: 500
+        website:
+          type: string
+          format: uri
+          maxLength: 2048
+        description:
+          type: string
+          maxLength: 500
+        ceo_name:
+          type: string
+          maxLength: 100
+        ceo_phone:
+          type: string
+          maxLength: 20
+        ceo_email:
+          type: string
+          format: email
+          maxLength: 100
+        headcount:
+          type: integer
+          minimum: 1
+
+    # 사용자 스키마
+    User:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        email:
+          type: string
+          format: email
+          example: "user@example.com"
+        name:
+          type: string
+          example: "김철수"
+        phone:
+          type: string
+          nullable: true
+          example: "010-1234-5678"
+        job_title:
+          type: string
+          example: "개발자"
+        department:
+          type: string
+          nullable: true
+          example: "개발팀"
+        role:
+          type: string
+          nullable: true
+          example: "팀리더"
+        system_role:
+          type: string
+          nullable: true
+          example: "admin"
+        description:
+          type: string
+          nullable: true
+          example: "백엔드 개발 담당"
+        is_accepted:
+          type: boolean
+          example: true
+        company_id:
+          type: integer
+          nullable: true
+          example: 1
+        company:
+          $ref: '#/components/schemas/Company'
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    UserCreate:
+      type: object
+      required:
+        - email
+        - password
+        - name
+        - job_title
+      properties:
+        email:
+          type: string
+          format: email
+          maxLength: 255
+        password:
+          type: string
+          format: password
+          minLength: 8
+        name:
+          type: string
+          maxLength: 100
+        phone:
+          type: string
+          maxLength: 20
+        job_title:
+          type: string
+          maxLength: 50
+        department:
+          type: string
+          maxLength: 50
+        role:
+          type: string
+          maxLength: 50
+        description:
+          type: string
+          maxLength: 100
+        company_id:
+          type: integer
+
+    UserUpdate:
+      type: object
+      properties:
+        name:
+          type: string
+          maxLength: 100
+        phone:
+          type: string
+          maxLength: 20
+        job_title:
+          type: string
+          maxLength: 50
+        department:
+          type: string
+          maxLength: 50
+        role:
+          type: string
+          maxLength: 50
+        system_role:
+          type: string
+          maxLength: 50
+        description:
+          type: string
+          maxLength: 100
+        company_id:
+          type: integer
+
+    # 방문 요청 스키마
+    VisitRequest:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        title:
+          type: string
+          example: "시설 점검 방문"
+        location:
+          type: string
+          example: "1층 로비"
+        product:
+          type: string
+          example: "보안 시스템"
+        context:
+          type: string
+          example: "정기 보안 점검을 위한 방문입니다."
+        is_editable:
+          type: boolean
+          example: true
+        company_id:
+          type: integer
+          example: 1
+        user_id:
+          type: integer
+          example: 1
+        forms_id:
+          type: integer
+          example: 1
+        company:
+          $ref: '#/components/schemas/Company'
+        user:
+          $ref: '#/components/schemas/User'
+        inspection_form:
+          $ref: '#/components/schemas/InspectionForm'
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    VisitRequestCreate:
+      type: object
+      required:
+        - title
+        - location
+        - product
+        - context
+        - company_id
+        - forms_id
+      properties:
+        title:
+          type: string
+          maxLength: 100
+        location:
+          type: string
+          maxLength: 100
+        product:
+          type: string
+          maxLength: 100
+        context:
+          type: string
+          maxLength: 1000
+        company_id:
+          type: integer
+        forms_id:
+          type: integer
+
+    VisitRequestUpdate:
+      type: object
+      properties:
+        title:
+          type: string
+          maxLength: 100
+        location:
+          type: string
+          maxLength: 100
+        product:
+          type: string
+          maxLength: 100
+        context:
+          type: string
+          maxLength: 1000
+        is_editable:
+          type: boolean
+        forms_id:
+          type: integer
+
+    # 방문 응답 스키마
+    VisitResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        title:
+          type: string
+          example: "방문 승인 요청"
+        context:
+          type: string
+          example: "업무 목적 방문"
+        vehicle_type:
+          type: string
+          nullable: true
+          example: "승용차"
+        vehicle_no:
+          type: string
+          nullable: true
+          example: "12가3456"
+        start_at:
+          type: string
+          format: date-time
+          example: "2024-01-15T09:00:00Z"
+        end_at:
+          type: string
+          format: date-time
+          example: "2024-01-15T17:00:00Z"
+        is_editable:
+          type: boolean
+          example: true
+        is_accepted:
+          type: boolean
+          example: false
+        reason:
+          type: string
+          nullable: true
+          example: "승인 대기 중"
+        user_id:
+          type: integer
+          example: 1
+        request_id:
+          type: integer
+          example: 1
+        user:
+          $ref: '#/components/schemas/User'
+        visit_request:
+          $ref: '#/components/schemas/VisitRequest'
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    VisitResponseCreate:
+      type: object
+      required:
+        - title
+        - context
+        - start_at
+        - end_at
+        - request_id
+      properties:
+        title:
+          type: string
+          maxLength: 100
+        context:
+          type: string
+          maxLength: 100
+        vehicle_type:
+          type: string
+          maxLength: 20
+        vehicle_no:
+          type: string
+          maxLength: 20
+        start_at:
+          type: string
+          format: date-time
+        end_at:
+          type: string
+          format: date-time
+        request_id:
+          type: integer
+
+    VisitResponseUpdate:
+      type: object
+      properties:
+        title:
+          type: string
+          maxLength: 100
+        context:
+          type: string
+          maxLength: 100
+        vehicle_type:
+          type: string
+          maxLength: 20
+        vehicle_no:
+          type: string
+          maxLength: 20
+        start_at:
+          type: string
+          format: date-time
+        end_at:
+          type: string
+          format: date-time
+        is_editable:
+          type: boolean
+
+    # 방문 로그 스키마
+    VisitLog:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        type:
+          type: string
+          enum: [entry, exit]
+          example: "entry"
+        user_id:
+          type: integer
+          example: 1
+        response_id:
+          type: integer
+          example: 1
+        user:
+          $ref: '#/components/schemas/User'
+        visit_response:
+          $ref: '#/components/schemas/VisitResponse'
+        issued_at:
+          type: string
+          format: date-time
+
+    VisitLogCreate:
+      type: object
+      required:
+        - type
+        - response_id
+      properties:
+        type:
+          type: string
+          enum: [entry, exit]
+        response_id:
+          type: integer
+
+    # 점검 폼 스키마
+    InspectionForm:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        name:
+          type: string
+          example: "보안 점검 폼"
+        description:
+          type: string
+          nullable: true
+          example: "정기 보안 점검을 위한 체크리스트"
+        is_editable:
+          type: boolean
+          example: true
+        user_id:
+          type: integer
+          example: 1
+        user:
+          $ref: '#/components/schemas/User'
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    InspectionFormCreate:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+          maxLength: 50
+        description:
+          type: string
+          maxLength: 500
+
+    InspectionFormUpdate:
+      type: object
+      properties:
+        name:
+          type: string
+          maxLength: 50
+        description:
+          type: string
+          maxLength: 500
+        is_editable:
+          type: boolean
+
+    # 점검 폼 필드 스키마
+    InspectionFormField:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        form_id:
+          type: integer
+          example: 1
+        label:
+          type: string
+          example: "출입문 잠금 상태를 확인하셨습니까?"
+        question_type:
+          type: string
+          enum: 
+            - short_answer
+            - paragraph
+            - multiple_choice
+            - checkbox
+            - dropdown
+            - file_upload
+            - linear_scale
+            - mc_grid
+            - cb_grid
+            - date
+            - time
+          example: "multiple_choice"
+        is_required:
+          type: boolean
+          example: true
+        sort_order:
+          type: integer
+          example: 1
+        settings:
+          type: object
+          nullable: true
+          description: 질문 유형별 추가 설정 (예: 선형배율의 min/max 값)
+          example: {"min": 1, "max": 5, "step": 1}
+        options:
+          type: array
+          items:
+            $ref: '#/components/schemas/InspectionFormFieldOption'
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    InspectionFormFieldCreate:
+      type: object
+      required:
+        - label
+        - question_type
+      properties:
+        label:
+          type: string
+          maxLength: 200
+        question_type:
+          type: string
+          enum: 
+            - short_answer
+            - paragraph
+            - multiple_choice
+            - checkbox
+            - dropdown
+            - file_upload
+            - linear_scale
+            - mc_grid
+            - cb_grid
+            - date
+            - time
+        is_required:
+          type: boolean
+          default: false
+        sort_order:
+          type: integer
+          default: 0
+        settings:
+          type: object
+          nullable: true
+        options:
+          type: array
+          items:
+            type: object
+            required:
+              - option_label
+            properties:
+              option_label:
+                type: string
+                maxLength: 200
+              option_value:
+                type: string
+                maxLength: 200
+              sort_order:
+                type: integer
+                default: 0
+
+    InspectionFormFieldUpdate:
+      type: object
+      properties:
+        label:
+          type: string
+          maxLength: 200
+        question_type:
+          type: string
+          enum: 
+            - short_answer
+            - paragraph
+            - multiple_choice
+            - checkbox
+            - dropdown
+            - file_upload
+            - linear_scale
+            - mc_grid
+            - cb_grid
+            - date
+            - time
+        is_required:
+          type: boolean
+        sort_order:
+          type: integer
+        settings:
+          type: object
+          nullable: true
+
+    # 점검 폼 필드 옵션 스키마
+    InspectionFormFieldOption:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        field_id:
+          type: integer
+          example: 1
+        option_label:
+          type: string
+          example: "예"
+        option_value:
+          type: string
+          nullable: true
+          example: "yes"
+        sort_order:
+          type: integer
+          example: 1
+
+    # 폼 응답 스키마
+    FormResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        form_id:
+          type: integer
+          example: 1
+        user_id:
+          type: integer
+          example: 1
+        form:
+          $ref: '#/components/schemas/InspectionForm'
+        user:
+          $ref: '#/components/schemas/User'
+        submitted_at:
+          type: string
+          format: date-time
+
+    FormResponseCreate:
+      type: object
+      required:
+        - form_id
+        - answers
+      properties:
+        form_id:
+          type: integer
+        answers:
+          type: array
+          items:
+            type: object
+            required:
+              - field_id
+            properties:
+              field_id:
+                type: integer
+                description: 답변할 필드 ID
+              option_id:
+                type: integer
+                nullable: true
+                description: 선택형 질문의 선택된 옵션 ID
+              answer_text:
+                type: string
+                nullable: true
+                description: 주관식 답변 텍스트
+
+    # 필드 답변 스키마
+    FieldAnswer:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        response_id:
+          type: integer
+          example: 1
+        field_id:
+          type: integer
+          example: 1
+        option_id:
+          type: integer
+          nullable: true
+          example: 1
+        answer_text:
+          type: string
+          nullable: true
+          example: "모든 출입문이 정상적으로 잠겨있습니다."
+        field:
+          $ref: '#/components/schemas/InspectionFormField'
+        option:
+          $ref: '#/components/schemas/InspectionFormFieldOption'
+        created_at:
+          type: string
+          format: date-time
+
+    # 이미지 스키마
+    Image:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        url:
+          type: string
+          format: uri
+          example: "https://example.com/images/profile.jpg"
+        imageable_id:
+          type: integer
+          example: 1
+        imageable_type:
+          type: string
+          example: "user"
+        purpose:
+          type: string
+          nullable: true
+          example: "profile"
+        metadata:
+          type: object
+          nullable: true
+          description: 이미지 메타데이터 (크기, 포맷 등)
+        created_at:
+          type: string
+          format: date-time
+
+tags:
+  - name: Authentication
+    description: 사용자 인증 관련 API
+  - name: Companies
+    description: 회사 관리 API
+  - name: Users
+    description: 사용자 관리 API
+  - name: Visit Requests
+    description: 방문 요청 관리 API
+  - name: Visit Responses
+    description: 방문 응답 관리 API
+  - name: Visit Logs
+    description: 방문 로그 관리 API
+  - name: Inspection Forms
+    description: 점검 폼 관리 API
+  - name: Form Responses
+    description: 폼 응답 관리 API
+  - name: Images
+    description: 이미지 업로드 및 관리 API
