@@ -146,7 +146,7 @@ CREATE TABLE visit_logs (
     issued_at          TIMESTAMP    DEFAULT CURRENT_TIMESTAMP,
 
     PRIMARY KEY (id),
-    FOREIGN KEY (user_id)       REFERENCES user_id(id),
+    FOREIGN KEY (user_id)       REFERENCES users(id),
     FOREIGN KEY (response_id)   REFERENCES visit_responses(id)
 );
 
