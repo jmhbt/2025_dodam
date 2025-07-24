@@ -1,4 +1,4 @@
-\/**
+/**
  * @swagger
  * /admin/dashboard:
  *   get:

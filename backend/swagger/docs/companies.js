@@ -3,9 +3,9 @@
  * /companies:
  *   get:
  *     summary: 회사 목록 조회
- *     description: 등록된 회사 목록을 조회
+ *     description: 등록된 회사 목록을 조회합니다.
  *     tags:
- *       - 회사 관리 (Companies)
+ *       - Companies
  *     security:
  *       - bearerAuth: []
  *     parameters:
@@ -13,51 +13,54 @@
  *         name: page
  *         schema:
  *           type: integer
+ *           minimum: 1
  *           default: 1
  *         description: 페이지 번호
  *       - in: query
  *         name: limit
  *         schema:
  *           type: integer
- *           default: 10
- *         description: 한 페이지당 항목 수
+ *           minimum: 1
+ *           maximum: 100
+ *           default: 20
+ *         description: 페이지당 항목 수
  *       - in: query
  *         name: search
  *         schema:
  *           type: string
- *         description: 회사명 검색
+ *         description: 회사명으로 검색
  *     responses:
  *       '200':
- *         description: 조회 성공
+ *         description: 회사 목록 조회 성공
  *         content:
  *           application/json:
  *             schema:
  *               type: object
  *               properties:
- *                 success:
- *                   type: boolean
- *                   example: true
  *                 data:
+ *                   type: array
+ *                   items:
+ *                     $ref: '#/components/schemas/Company'
+ *                 pagination:
  *                   type: object
  *                   properties:
- *                     companies:
- *                       type: array
- *                       items:
- *                         $ref: '#/components/schemas/Company'
- *                     totalCount:
- *                       type: integer
- *                       example: 25
- *                     currentPage:
+ *                     current_page:
  *                       type: integer
  *                       example: 1
- *                     totalPages:
+ *                     per_page:
  *                       type: integer
- *                       example: 3
+ *                       example: 20
+ *                     total:
+ *                       type: integer
+ *                       example: 150
+ *                     total_pages:
+ *                       type: integer
+ *                       example: 8
  *   post:
  *     summary: 회사 등록
- *     description: 새로운 회사를 시스템에 등록
+ *     description: 새로운 회사를 시스템에 등록합니다.
  *     tags:
- *       - 회사 관리 (Companies)
+ *       - Companies
  *     security:
  *       - bearerAuth: []
  *     requestBody:
@@ -66,101 +69,122 @@
  *         application/json:
  *           schema:
  *             type: object
+ *             required:
+ *               - name
+ *               - address
+ *               - description
+ *               - ceo_name
+ *               - ceo_phone
+ *               - ceo_email
+ *               - headcount
  *             properties:
  *               name:
  *                 type: string
- *                 example: "ABC 주식회사"
- *               registrationNo:
- *                 type: string
- *                 example: "123-45-67890"
+ *                 maxLength: 100
+ *                 example: "테크 컴퍼니"
  *               address:
  *                 type: string
+ *                 maxLength: 500
  *                 example: "서울시 강남구 테헤란로 123"
- *               phone:
- *                 type: string
- *                 example: "02-1234-5678"
- *               email:
- *                 type: string
- *                 format: email
- *                 example: "contact@abc.com"
- *               contactPerson:
- *                 type: string
- *                 example: "김담당자"
- *               contactPhone:
- *                 type: string
- *                 example: "010-1234-5678"
  *               website:
  *                 type: string
- *                 example: "https://www.abc.com"
- *               companyType:
+ *                 format: uri
+ *                 maxLength: 2048
+ *                 example: "https://example.com"
+ *               description:
  *                 type: string
- *                 example: "설비점검업체"
- *             required: [name, registrationNo, contactPerson, contactPhone]
+ *                 maxLength: 500
+ *                 example: "혁신적인 기술 회사"
+ *               ceo_name:
+ *                 type: string
+ *                 maxLength: 100
+ *                 example: "김대표"
+ *               ceo_phone:
+ *                 type: string
+ *                 maxLength: 20
+ *                 example: "010-1234-5678"
+ *               ceo_email:
+ *                 type: string
+ *                 format: email
+ *                 maxLength: 100
+ *                 example: "ceo@example.com"
+ *               headcount:
+ *                 type: integer
+ *                 minimum: 1
+ *                 example: 50
  *     responses:
  *       '201':
- *         description: 등록 성공
+ *         description: 회사 등록 성공
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Company'
+ *       '400':
+ *         description: 잘못된 요청
  *         content:
  *           application/json:
  *             schema:
  *               type: object
  *               properties:
- *                 success:
- *                   type: boolean
- *                   example: true
  *                 message:
  *                   type: string
- *                   example: "회사가 등록되었습니다."
- *                 data:
- *                   type: object
- *                   properties:
- *                     companyId:
- *                       type: integer
- *                       example: 1
- */
+ *                   example: "회사명은 필수 항목입니다."
+ *                 code:
+ *                   type: string
+ *                   example: "VALIDATION_ERROR"
 
 /**
  * @swagger
  * /companies/{id}:
  *   get:
- *     summary: 회사 상세 정보 조회
- *     description: 특정 회사의 상세 정보를 조회
+ *     summary: 회사 상세 조회
+ *     description: 특정 회사의 상세 정보를 조회합니다.
  *     tags:
- *       - 회사 관리 (Companies)
+ *       - Companies
  *     security:
  *       - bearerAuth: []
  *     parameters:
- *       - in: path
- *         name: id
+ *       - name: id
+ *         in: path
+ *         required: true
  *         schema:
  *           type: integer
- *         required: true
+ *           minimum: 1
  *         description: 회사 ID
  *     responses:
  *       '200':
- *         description: 조회 성공
+ *         description: 회사 상세 정보 조회 성공
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Company'
+ *       '404':
+ *         description: 회사를 찾을 수 없음
  *         content:
  *           application/json:
  *             schema:
  *               type: object
  *               properties:
- *                 success:
- *                   type: boolean
- *                   example: true
- *                 data:
- *                   $ref: '#/components/schemas/Company'
+ *                 message:
+ *                   type: string
+ *                   example: "회사를 찾을 수 없습니다."
+ *                 code:
+ *                   type: string
+ *                   example: "COMPANY_NOT_FOUND"
  *   put:
  *     summary: 회사 정보 수정
- *     description: 기존 회사 정보를 수정
+ *     description: 기존 회사 정보를 수정합니다.
  *     tags:
- *       - 회사 관리 (Companies)
+ *       - Companies
  *     security:
  *       - bearerAuth: []
  *     parameters:
- *       - in: path
- *         name: id
+ *       - name: id
+ *         in: path
+ *         required: true
  *         schema:
  *           type: integer
- *         required: true
+ *           minimum: 1
  *         description: 회사 ID
  *     requestBody:
  *       required: true
@@ -171,34 +195,81 @@
  *             properties:
  *               name:
  *                 type: string
- *                 example: "ABC 주식회사"
+ *                 maxLength: 100
+ *                 example: "테크 컴퍼니"
  *               address:
  *                 type: string
+ *                 maxLength: 500
  *                 example: "서울시 강남구 테헤란로 123"
- *               phone:
- *                 type: string
- *                 example: "02-1234-5678"
- *               email:
- *                 type: string
- *                 format: email
- *                 example: "contact@abc.com"
- *               contactPerson:
- *                 type: string
- *                 example: "김담당자"
- *               contactPhone:
- *                 type: string
- *                 example: "010-1234-5678"
  *               website:
  *                 type: string
- *                 example: "https://www.abc.com"
- *               companyType:
+ *                 format: uri
+ *                 maxLength: 2048
+ *                 example: "https://example.com"
+ *               description:
  *                 type: string
- *                 example: "설비점검업체"
+ *                 maxLength: 500
+ *                 example: "혁신적인 기술 회사"
+ *               ceo_name:
+ *                 type: string
+ *                 maxLength: 100
+ *                 example: "김대표"
+ *               ceo_phone:
+ *                 type: string
+ *                 maxLength: 20
+ *                 example: "010-1234-5678"
+ *               ceo_email:
+ *                 type: string
+ *                 format: email
+ *                 maxLength: 100
+ *                 example: "ceo@example.com"
+ *               headcount:
+ *                 type: integer
+ *                 minimum: 1
+ *                 example: 50
  *     responses:
  *       '200':
- *         description: 수정 성공
+ *         description: 회사 정보 수정 성공
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/SuccessResponse'
+ *               $ref: '#/components/schemas/Company'
+ *       '404':
+ *         description: 회사를 찾을 수 없음
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: "회사를 찾을 수 없습니다."
+ *   delete:
+ *     summary: 회사 삭제
+ *     description: 회사를 시스템에서 삭제합니다.
+ *     tags:
+ *       - Companies
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - name: id
+ *         in: path
+ *         required: true
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *         description: 회사 ID
+ *     responses:
+ *       '204':
+ *         description: 회사 삭제 성공
+ *       '404':
+ *         description: 회사를 찾을 수 없음
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: "회사를 찾을 수 없습니다."
  */
