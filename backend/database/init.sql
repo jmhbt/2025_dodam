@@ -23,7 +23,7 @@ CREATE TABLE social_identities (
 
   created_at           TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at           TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  
+
   UNIQUE(provider, provider_user_id),
   FOREIGN KEY (user_id) REFERENCES users(id)
 );
@@ -67,7 +67,7 @@ CREATE TABLE users_info_in_company (
   FOREIGN KEY (user_id) REFERENCES users(id)
   
 
-)
+);
 
 
 
