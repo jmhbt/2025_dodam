@@ -12,7 +12,7 @@ exports.register = async (req, res) => {
   try {
     const { email, password, name, phone } = req.body;
 
-    if (!email || !password || !name) {
+    if (!email || !password || !name || !phone) {
       return res.status(400).json({ message: '필수 입력값이 부족합니다.' });
     }
 
@@ -20,7 +20,7 @@ exports.register = async (req, res) => {
       return res.status(409).json({ message: '이미 존재하는 이메일입니다.' });
     }
 
-    if (phone && await checkPhoneExists(phone)) {
+    if (await checkPhoneExists(phone)) {
       return res.status(409).json({ message: '이미 사용 중인 전화번호입니다.' });
     }
 

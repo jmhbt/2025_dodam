@@ -19,10 +19,9 @@ app.use('/auth', authRouter);
 app.use('/swagger-docs', swaggerRouter); // 또는 '/docs'
 
 const PORT = process.env.PORT || 3000;
-const HOST = '0.0.0.0';  // 이 줄이 반드시 있어야 함
 
-app.listen(PORT, HOST, () => {
-  console.log(`✅ 서버 실행됨: http://${HOST}:${PORT}`);
+app.listen(PORT, () => {
+  console.log(`✅ 서버 실행됨: http://localhost:${PORT}`);
 });
 
 

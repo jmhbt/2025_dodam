@@ -18,8 +18,8 @@ exports.checkPhoneExists = async (phone) => {
 exports.createUser = async ({ email, password, name, phone }) => {
   const phoneVal = phone ?? null;
   const sql = `
-    INSERT INTO users (email, password, name, phone, is_accepted)
-    VALUES (?, ?, ?, ?, true)
+    INSERT INTO users (email, password, name, phone)
+    VALUES (?, ?, ?, ?)
   `;
   const [result] = await db.execute(sql, [email, password, name, phoneVal]);
   return result.insertId;
