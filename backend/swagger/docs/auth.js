@@ -1,56 +1,27 @@
 /**
  * @swagger
- * /auth/login:
- *   post:
- *     summary: 사용자 로그인
- *     description: 이메일과 패스워드로 로그인하여 JWT 토큰을 받습니다.
- *     tags:
- *       - Authentication
- *     security: []
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             required:
- *               - email
- *               - password
- *             properties:
- *               email:
- *                 type: string
- *                 format: email
- *                 example: "user@example.com"
- *               password:
- *                 type: string
- *                 format: password
- *                 example: "password123"
- *     responses:
- *       '200':
- *         description: 로그인 성공
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 token:
- *                   type: string
- *                   example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
- *                 user:
- *                   $ref: '#/components/schemas/User'
- *       '401':
- *         description: 인증 실패
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 message:
- *                   type: string
- *                   example: "이메일 또는 비밀번호가 올바르지 않습니다."
- *                 code:
- *                   type: string
- *                   example: "INVALID_CREDENTIALS"
+ * components:
+ *   schemas:
+ *     User:
+ *       type: object
+ *       properties:
+ *         id:
+ *           type: integer
+ *           example: 123
+ *         email:
+ *           type: string
+ *           format: email
+ *           example: "user@example.com"
+ *         name:
+ *           type: string
+ *           example: "홍길동"
+ *         phone:
+ *           type: string
+ *           example: "010-1234-5678"
+ *         createdAt:
+ *           type: string
+ *           format: date-time
+ *           example: "2025-07-29T12:34:56Z"
  */
 
 /**
@@ -58,7 +29,7 @@
  * /auth/register:
  *   post:
  *     summary: 사용자 회원가입
- *     description: 새로운 사용자 계정을 생성합니다.
+ *     description: 이메일, 비밀번호, 이름, 전화번호를 받아 새 사용자 계정을 생성합니다.
  *     tags:
  *       - Authentication
  *     security: []
@@ -72,93 +43,48 @@
  *               - email
  *               - password
  *               - name
- *               - job_title
+ *               - phone
  *             properties:
  *               email:
  *                 type: string
  *                 format: email
- *                 maxLength: 255
  *                 example: "user@example.com"
  *               password:
  *                 type: string
  *                 format: password
- *                 minLength: 8
  *                 example: "password123"
  *               name:
  *                 type: string
- *                 maxLength: 100
- *                 example: "김철수"
+ *                 example: "홍길동"
  *               phone:
  *                 type: string
- *                 maxLength: 20
  *                 example: "010-1234-5678"
- *               job_title:
- *                 type: string
- *                 maxLength: 50
- *                 example: "개발자"
- *               department:
- *                 type: string
- *                 maxLength: 50
- *                 example: "개발팀"
- *               role:
- *                 type: string
- *                 maxLength: 50
- *                 example: "팀리더"
- *               description:
- *                 type: string
- *                 maxLength: 100
- *                 example: "백엔드 개발 담당"
- *               company_id:
- *                 type: integer
- *                 example: 1
  *     responses:
- *       '201':
+ *       201:
  *         description: 회원가입 성공
  *         content:
  *           application/json:
  *             schema:
  *               type: object
  *               properties:
- *                 success:
- *                   type: boolean
- *                   example: true
  *                 message:
  *                   type: string
- *                   example: "회원가입이 완료되었습니다."
- *                 data:
- *                   $ref: '#/components/schemas/User'
- *       '400':
- *         description: 잘못된 요청
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 message:
- *                   type: string
- *                   example: "이미 등록된 이메일입니다."
- *                 code:
- *                   type: string
- *                   example: "EMAIL_ALREADY_EXISTS"
+ *                   example: "회원가입 성공"
+ *       400:
+ *         description: 필수 입력값 누락 또는 형식 오류
+ *       409:
+ *         description: 이미 존재하는 이메일 또는 전화번호
  */
 
 /**
  * @swagger
- * /auth/social/{provider}:
+ * /auth/send-email-verify:
  *   post:
- *     summary: 소셜 로그인
- *     description: 소셜 플랫폼을 통한 로그인
+ *     summary: 이메일 인증 코드 발송
+ *     description: 가입 전 중복 확인된 이메일로 6자리 인증 코드를 발송하고 Redis에 저장합니다.
  *     tags:
  *       - Authentication
  *     security: []
- *     parameters:
- *       - name: provider
- *         in: path
- *         required: true
- *         schema:
- *           type: string
- *           enum: [google, facebook, kakao]
- *         description: 소셜 로그인 제공자
  *     requestBody:
  *       required: true
  *       content:
@@ -166,31 +92,15 @@
  *           schema:
  *             type: object
  *             required:
- *               - access_token
+ *               - email
  *             properties:
- *               access_token:
+ *               email:
  *                 type: string
- *                 description: 소셜 플랫폼에서 받은 액세스 토큰
- *                 example: "ya29.a0AfH6SMC..."
+ *                 format: email
+ *                 example: "user@example.com"
  *     responses:
- *       '200':
- *         description: 소셜 로그인 성공
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 token:
- *                   type: string
- *                   example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
- *                 user:
- *                   $ref: '#/components/schemas/User'
- *                 is_new_user:
- *                   type: boolean
- *                   example: false
- *                   description: 신규 사용자 여부
- *       '400':
- *         description: 잘못된 토큰
+ *       200:
+ *         description: 인증 코드 발송 완료
  *         content:
  *           application/json:
  *             schema:
@@ -198,8 +108,165 @@
  *               properties:
  *                 message:
  *                   type: string
- *                   example: "유효하지 않은 액세스 토큰입니다."
- *                 code:
+ *                   example: "인증 코드를 이메일로 전송했습니다."
+ *       400:
+ *         description: 이메일 누락 또는 형식 오류
+ *       409:
+ *         description: 이미 존재하는 이메일
+ */
+
+/**
+ * @swagger
+ * /auth/email-verify:
+ *   post:
+ *     summary: 이메일 인증 코드 검증
+ *     description: 사용자가 입력한 인증 코드를 Redis에 저장된 값과 비교하여 검증합니다.
+ *     tags:
+ *       - Authentication
+ *     security: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - email
+ *               - code
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 format: email
+ *                 example: "user@example.com"
+ *               code:
+ *                 type: string
+ *                 example: "123456"
+ *     responses:
+ *       200:
+ *         description: 인증 완료
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
  *                   type: string
- *                   example: "INVALID_TOKEN"
+ *                   example: "이메일 인증이 완료되었습니다."
+ *       400:
+ *         description: 코드 누락, 만료 또는 없음
+ *       401:
+ *         description: 코드 불일치
+ */
+
+/**
+ * @swagger
+ * /auth/login:
+ *   post:
+ *     summary: 사용자 로그인
+ *     description: 이메일과 비밀번호로 로그인 후 JWT accessToken과 refreshToken을 반환합니다.
+ *     tags:
+ *       - Authentication
+ *     security: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - email
+ *               - password
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 format: email
+ *                 example: "user@example.com"
+ *               password:
+ *                 type: string
+ *                 format: password
+ *                 example: "password123"
+ *     responses:
+ *       200:
+ *         description: 로그인 성공
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 accessToken:
+ *                   type: string
+ *                   example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+ *                 refreshToken:
+ *                   type: string
+ *                   example: "dGhpcyBpcyBhIHJlZnJlc2ggdG9rZW4..."
+ *       400:
+ *         description: 이메일 또는 비밀번호 누락/형식 오류
+ *       401:
+ *         description: 자격 증명 불일치
+ */
+
+/**
+ * @swagger
+ * /auth/refresh:
+ *   post:
+ *     summary: 액세스 토큰 재발급
+ *     description: refreshToken을 검증하고 새 accessToken과 refreshToken을 발급합니다.
+ *     tags:
+ *       - Authentication
+ *     security: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - refreshToken
+ *             properties:
+ *               refreshToken:
+ *                 type: string
+ *                 example: "dGhpcyBpcyBhIHJlZnJlc2ggdG9rZW4..."
+ *     responses:
+ *       200:
+ *         description: 토큰 재발급 성공
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 accessToken:
+ *                   type: string
+ *                 refreshToken:
+ *                   type: string
+ *       401:
+ *         description: refreshToken 누락
+ *       403:
+ *         description: refreshToken 검증 실패
+ */
+
+/**
+ * @swagger
+ * /auth/logout:
+ *   post:
+ *     summary: 로그아웃
+ *     description: refreshToken을 삭제하여 세션을 종료합니다.
+ *     tags:
+ *       - Authentication
+ *     security: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - refreshToken
+ *             properties:
+ *               refreshToken:
+ *                 type: string
+ *     responses:
+ *       204:
+ *         description: 로그아웃 성공 (콘텐츠 없음)
+ *       400:
+ *         description: refreshToken 누락
  */

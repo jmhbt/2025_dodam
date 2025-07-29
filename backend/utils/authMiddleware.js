@@ -1,16 +1,14 @@
-const jwt = require('jsonwebtoken');
-const SECRET = process.env.JWT_SECRET;
+// utils/authMiddleware.js
+const jwtUtils = require('./jwtUtils');
 
-exports.authenticateJWT = (req, res, next) => {
-  const authHeader = req.headers.authorization;
-  if (!authHeader) return res.sendStatus(401);
-
-  const token = authHeader.split(' ')[1];
+module.exports = (req, res, next) => {
+  const auth = req.headers.authorization?.split(' ')[1];
+  if (!auth) return res.status(401).json({ message: '로그인이 필요합니다.' });
   try {
-    const user = jwt.verify(token, SECRET);
-    req.user = user;
+    const payload = jwtUtils.verifyAccessToken(auth);
+    req.user = payload;
     next();
   } catch {
-    res.sendStatus(403);
+    return res.status(401).json({ message: 'Access Token이 유효하지 않습니다.' });
   }
 };
