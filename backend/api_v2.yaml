@@ -224,6 +224,85 @@ paths:
         '204':
           description: 회사 삭제 성공
 
+  /companies/{companyId}/members:
+    get:
+      tags: [CompanyMembers]
+      summary: 회사 소속 인원 조회
+      parameters:
+        - name: companyId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: 회사 인원 목록 반환
+    post:
+      tags: [CompanyMembers]
+      summary: 회사 소속 사용자 추가
+      parameters:
+        - name: companyId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                userId:
+                  type: integer
+                job_title:
+                  type: string
+                department:
+                  type: string
+                role:
+                  type: string
+                system_role:
+                  type: string
+                description:
+                  type: string
+      responses:
+        '201':
+          description: 사용자 소속 추가 성공
+
+  /companies/{companyId}/members/{userId}/approve:
+    patch:
+      tags: [CompanyMembers]
+      summary: 회사 사용자 승인 처리
+      parameters:
+        - name: companyId
+          in: path
+          required: true
+          schema: { type: integer }
+        - name: userId
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        '200':
+          description: 승인 처리 성공
+
+  /companies/{companyId}/members/{userId}:
+    delete:
+      tags: [CompanyMembers]
+      summary: 회사 사용자 탈퇴/삭제
+      parameters:
+        - name: companyId
+          in: path
+          required: true
+          schema: { type: integer }
+        - name: userId
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        '204':
+          description: 삭제 성공
+
   # 사용자 관리
   /users:
     get:
@@ -790,6 +869,48 @@ paths:
                         type: array
                         items:
                           $ref: '#/components/schemas/FieldAnswer'
+
+  /form-responses/{responseId}/answers:
+    get:
+      tags: [FieldAnswers]
+      summary: 응답에 대한 문항별 답변 조회
+      parameters:
+        - name: responseId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: 응답 데이터 반환
+    post:
+      tags: [FieldAnswers]
+      summary: 문항별 답변 등록
+      parameters:
+        - name: responseId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                type: object
+                required: [field_id]
+                properties:
+                  field_id:
+                    type: integer
+                  option_id:
+                    type: integer
+                  answer_text:
+                    type: string
+      responses:
+        '201':
+          description: 답변 등록 완료
 
   # 이미지 관리
   /images:
@@ -1501,7 +1622,7 @@ components:
         settings:
           type: object
           nullable: true
-          description: 질문 유형별 추가 설정 (예: 선형배율의 min/max 값)
+          description: "질문 유형별 추가 설정 (예: 선형배율의 min/max 값)"
           example: {"min": 1, "max": 5, "step": 1}
         options:
           type: array
