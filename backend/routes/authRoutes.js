@@ -21,4 +21,8 @@ router.post('/refresh', authController.refresh);
 // 로그아웃
 router.post('/logout', authController.logout);
 
+router.get('/auth/google/callback', authController.googleCallback);
+
+router.get('/auth/google', authController.getGoogleAuthUrl);
+
 module.exports = router;

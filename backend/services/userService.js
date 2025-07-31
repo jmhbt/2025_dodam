@@ -36,3 +36,77 @@ exports.getUser = async (email, plainPassword) => {
 
   return user;
 };
+
+// 1. 소셜 아이덴티티 조회 (provider + provider_user_id 기준)
+exports.findSocialIdentity = async (provider, providerUserId) => {
+  const [rows] = await db.execute(
+    `SELECT * FROM social_identities WHERE provider = ? AND provider_user_id = ?`,
+    [provider, providerUserId]
+  );
+  return rows.length > 0 ? rows[0] : null;
+};
+
+// 2. 소셜 유저 생성 (users 테이블 + social_identities 테이블)
+exports.createSnsUser = async ({ email, name, phone, provider, providerUserId, accessToken, refreshToken, tokenExpiresAt, profileData }) => {
+  // users 테이블 생성
+  const [userResult] = await db.execute(
+    `INSERT INTO users (email, password, name, phone)
+     VALUES (?, NULL, ?, ?)`,
+    [email, name, phone ?? null]
+  );
+  const userId = userResult.insertId;
+
+  // social_identities 테이블 생성
+  await db.execute(
+    `INSERT INTO social_identities (
+      user_id, provider, provider_user_id, access_token,
+      refresh_token, token_expires_at, profile_data
+    )
+    VALUES (?, ?, ?, ?, ?, ?, ?)`,
+    [
+      userId,
+      provider,
+      providerUserId,
+      accessToken,
+      refreshToken,
+      tokenExpiresAt,
+      JSON.stringify(profileData),
+    ]
+  );
+
+  return userId;
+};
+
+// 3. 유저 이메일로 조회
+exports.getUserByEmail = async (email) => {
+  const [rows] = await db.execute('SELECT * FROM users WHERE email = ?', [email]);
+  return rows.length > 0 ? rows[0] : null;
+};
+
+// 4. 소셜 아이덴티티 생성만 따로
+exports.createSocialIdentity = async ({
+  userId,
+  provider,
+  providerUserId,
+  accessToken,
+  refreshToken,
+  tokenExpiresAt,
+  profileData
+}) => {
+  await db.execute(
+    `INSERT INTO social_identities (
+      user_id, provider, provider_user_id, access_token,
+      refresh_token, token_expires_at, profile_data
+    )
+    VALUES (?, ?, ?, ?, ?, ?, ?)`,
+    [
+      userId,
+      provider,
+      providerUserId,
+      accessToken,
+      refreshToken,
+      tokenExpiresAt,
+      JSON.stringify(profileData),
+    ]
+  );
+};

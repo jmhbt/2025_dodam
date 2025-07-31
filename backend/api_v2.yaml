@@ -30,13 +30,117 @@ security:
   - bearerAuth: []
 
 paths:
-  # 인증 관련
+  /auth/register:
+    post:
+      tags:
+        - Authentication
+      summary: 사용자 회원가입
+      description: 이메일, 비밀번호, 이름, 전화번호를 받아 새 사용자 계정을 생성합니다.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserCreate'
+      responses:
+        '201':
+          description: 회원가입 성공
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "회원가입 성공"
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+  /auth/send-email-verify:
+    post:
+      tags:
+        - Authentication
+      summary: 이메일 인증 코드 발송
+      description: 가입 전에 중복 확인된 이메일로 6자리 인증 코드를 발송하고 Redis에 저장합니다.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+              properties:
+                email:
+                  type: string
+                  format: email
+                  example: "user@example.com"
+      responses:
+        '200':
+          description: 인증 코드 발송 완료
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "인증 코드를 이메일로 전송했습니다."
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+  /auth/email-verify:
+    post:
+      tags:
+        - Authentication
+      summary: 이메일 인증 코드 검증
+      description: 사용자가 입력한 인증 코드를 Redis에 저장된 값과 비교하여 검증합니다.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+                - code
+              properties:
+                email:
+                  type: string
+                  format: email
+                  example: "user@example.com"
+                code:
+                  type: string
+                  example: "123456"
+      responses:
+        '200':
+          description: 인증 완료
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "이메일 인증이 완료되었습니다."
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
   /auth/login:
     post:
       tags:
         - Authentication
       summary: 사용자 로그인
-      description: 이메일과 패스워드로 로그인하여 JWT 토큰을 받습니다.
+      description: 이메일과 비밀번호로 로그인하여 JWT accessToken과 refreshToken을 반환합니다.
       security: []
       requestBody:
         required: true
@@ -64,71 +168,79 @@ paths:
               schema:
                 type: object
                 properties:
-                  token:
+                  accessToken:
                     type: string
                     example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
-                  user:
-                    $ref: '#/components/schemas/User'
+                  refreshToken:
+                    type: string
+                    example: "dGhpcyBpcyBhIHJlZnJlc2ggdG9rZW4..."
+        '400':
+          $ref: '#/components/responses/BadRequest'
         '401':
           $ref: '#/components/responses/Unauthorized'
 
-  /auth/register:
+  /auth/refresh:
     post:
       tags:
         - Authentication
-      summary: 사용자 회원가입
+      summary: 액세스 토큰 재발급
+      description: 유효한 refreshToken을 검증하고 새로운 accessToken과 refreshToken을 발급합니다.
       security: []
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/UserCreate'
-      responses:
-        '201':
-          description: 회원가입 성공
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/User'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-
-  /auth/social/{provider}:
-    post:
-      tags:
-        - Authentication
-      summary: 소셜 로그인
-      security: []
-      parameters:
-        - name: provider
-          in: path
-          required: true
-          schema:
-            type: string
-            enum: [google, facebook, kakao]
       requestBody:
         required: true
         content:
           application/json:
             schema:
               type: object
+              required:
+                - refreshToken
               properties:
-                access_token:
+                refreshToken:
                   type: string
-                  description: 소셜 플랫폼에서 받은 액세스 토큰
+                  example: "dGhpcyBpcyBhIHJlZnJlc2ggdG9rZW4..."
       responses:
         '200':
-          description: 소셜 로그인 성공
+          description: 토큰 재발급 성공
           content:
             application/json:
               schema:
                 type: object
                 properties:
-                  token:
+                  accessToken:
                     type: string
-                  user:
-                    $ref: '#/components/schemas/User'
+                  refreshToken:
+                    type: string
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /auth/logout:
+    post:
+      tags:
+        - Authentication
+      summary: 로그아웃
+      description: 전달된 refreshToken을 삭제하여 세션을 종료합니다.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - refreshToken
+              properties:
+                refreshToken:
+                  type: string
+      responses:
+        '204':
+          description: 로그아웃 성공 (콘텐츠 없음)
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
 
   # 회사 관리
   /companies:
