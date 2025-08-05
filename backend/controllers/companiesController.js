@@ -60,7 +60,7 @@ exports.getCompanyById = async (req, res) => {
     const companyId = req.params.id;
     const company = await companyService.getCompanyById(companyId);
     if (!company) {
-      return res.stauts(404).json({message: '회사를 찾을 수 없습니다.'});
+      return res.status(404).json({message: '회사를 찾을 수 없습니다.'});
     }
     res.status(200).json(company);
   } catch(err) {
@@ -72,7 +72,7 @@ exports.getCompanyById = async (req, res) => {
 exports.updateCompany = async (req, res) => {
   try {
     const companyId = req.params.id;
-    const updataData = req.body;
+    const updateData = req.body;
 
     const updated = await companyService.updateCompany(companyId, updateData);
 
@@ -115,7 +115,7 @@ exports.getJoinRequests = async (req, res) => {
       return res.status(403).json({message: '권한이 없습니다.'});
     }
 
-    res.stauts(200).json(requests);
+    res.status(200).json(requests);
   } catch(err) {
     res.status(err.status || 500).json({message: '가입 요청 목록 조회 실패', error: err.message});
   }
@@ -135,7 +135,7 @@ exports.getCompanyMembers = async (req,res) => {
 };
 
 // 회사 직원 추가 (초대/직접 등록)
-exports.addCompanyService = async (req, res) => {
+exports.addCompanyMember = async (req, res) => {
   const companyId = req.params.companyId;
   const adminUserId = req.user.id;
   const { userEmail, jobTitle, department, role, systemRole, description } = req.body;
@@ -154,7 +154,7 @@ exports.addCompanyService = async (req, res) => {
     
     if (result === 'unauthorized') {
       return res.status(403).json({message: '관리자 권한이 없습니다.'});
-    } else if (result === 'user_not_fount'){
+    } else if (result === 'user_not_found'){
       return res.status(404).json({message: '해당 이메일의 유저가 존재하지 않습니다.'});
     } else if (result === 'already_member'){
       return res.status(409).json({message: '이미 회사에 등록된 유저입니다.'});
@@ -174,7 +174,7 @@ exports.approveCompanyMember = async (req,res) => {
   const adminUserId = req.user.id;
 
   try {
-    const result = await companiesService.approveCompanyMeber(companyId, targetUserId, adminUserId);
+    const result = await companiesService.approveCompanyMember(companyId, targetUserId, adminUserId);
 
     if (result === 'unauthorized'){
       return res.status(403).json({message: '권한이 없습니다.'});

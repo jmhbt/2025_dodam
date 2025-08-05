@@ -212,7 +212,7 @@ exports.getCompanyMembers = async (companyId, userId) => {
       uc.is_accepted AS isAccepted,
       us.created_at AS joinedAt
     FROM users u 
-    JOIN user_info_in_company uc ON u.id = uc.users_id
+    JOIN users_info_in_company uc ON u.id = uc.user_id
     WHERE uc.company_id = ?
     ORDER BY uc.created_at ASC`,
     [companyId]
@@ -236,11 +236,11 @@ exports.addCompanyMember = async ({
     WHERE company_id = ? AND user_id ? AND system_role = 'admin' AND is_accepted = true`,
     [companyId, adminUserId]
   );
-  if (adminRow.length === 0) return 'unauthorized';
+  if (adminRows.length === 0) return 'unauthorized';
 
   const [userRows] = await db.query(
     `SELECT id FROM users WHERE email = ?`,
-    [userEamil]
+    [userEmail]
   );
   if (userRows.length === 0) return 'user_not_found';
   
@@ -281,7 +281,7 @@ exports.approveCompanyMember = async (companyId, targetUserId, adminUserId) => {
     `UPDATE users_info_in_company
     SET is_accepted = true
     WHERE company_id = ? AND user_id = ?`,
-    [company_id, targetUserId]
+    [companyId, targetUserId]
   );
 
   return 'success';
