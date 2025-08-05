@@ -212,6 +212,25 @@ paths:
                     type: string
         '400':
           $ref: '#/components/responses/BadRequest'
+          
+  /auth/me:
+    get:
+      tags:
+        - Authentication
+      summary: 로그인한 사용자 정보 조회
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: 사용자 정보
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /auth/social/{provider}:
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':

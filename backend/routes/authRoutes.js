@@ -1,10 +1,14 @@
 // routes/auth.js
 const express = require('express');
 const router = express.Router();
+const authMiddleware = require('../utils/authMiddleware');
 const authController = require('../controllers/authController');
 
 // 회원가입
 router.post('/register', authController.register);
+
+// me
+router.get('/me', authMiddleware, authController)
 
 // 이메일 인증 코드 발송
 router.post('/send-email-verify', authController.SendEmailVerify);
@@ -19,7 +23,7 @@ router.post('/login', authController.login);
 router.post('/refresh', authController.refresh);
 
 // 로그아웃
-router.post('/logout', authController.logout);
+router.post('/logout', authMiddleware, authController.logout);
 
 router.get('/auth/google/callback', authController.googleCallback);
 
