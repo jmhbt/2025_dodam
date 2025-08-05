@@ -8,7 +8,7 @@ const authController = require('../controllers/authController');
 router.post('/register', authController.register);
 
 // me
-router.get('/me', authMiddleware, authController)
+router.get('/me', authMiddleware, authController.getProfile);
 
 // 이메일 인증 코드 발송
 router.post('/send-email-verify', authController.SendEmailVerify);
