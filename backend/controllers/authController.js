@@ -352,3 +352,95 @@ exports.googleCallback = async (req, res) => {
 };
 
 
+exports.getGoogleAuthUrl = (req, res) => {
+  const { GOOGLE_CLIENT_ID, REDIRECT_URI } = process.env;
+  const url = `https://accounts.google.com/o/oauth2/v2/auth?` +
+    `client_id=${GOOGLE_CLIENT_ID}&` +
+    `redirect_uri=${encodeURIComponent(REDIRECT_URI)}&` +
+    `response_type=code&` +
+    `scope=email%20profile&` +
+    `access_type=offline&prompt=consent`;
+  res.json({ url });
+};
+
+
+exports.googleCallback = async (req, res) => {
+  try {
+    const code = req.query.code;
+    if (!code) return res.status(400).json({ message: 'code가 없습니다.' });
+
+    // 1️⃣ code → token 교환 요청
+    const tokenRes = await axios.post('https://oauth2.googleapis.com/token', null, {
+      params: {
+        code,
+        client_id: process.env.GOOGLE_CLIENT_ID,
+        client_secret: process.env.GOOGLE_CLIENT_SECRET,
+        redirect_uri: process.env.REDIRECT_URI,
+        grant_type: 'authorization_code'
+      }
+    });
+    const { id_token, access_token } = tokenRes.data;
+
+    // 2️⃣ id_token 검증
+    const ticket = await client.verifyIdToken({
+      idToken: id_token,
+      audience: process.env.GOOGLE_CLIENT_ID
+    });
+    const payload = ticket.getPayload();
+    const providerUserId = payload.sub;
+    const email = payload.email;
+    const name = payload.name;
+
+    // 3️⃣ DB: social identity 조회 또는 생성
+    let social = await findSocialIdentity('google', providerUserId);
+    let user;
+    if (social) {
+      user = await getUserByEmail(social.user_id);
+    } else {
+      const existingUser = await getUserByEmail(email.toLowerCase());
+      if (existingUser) {
+        // 이미 이메일로 가입된 계정이 있으면 에러 발생
+        return res.status(409).json({
+          message: '이미 동일 이메일로 가입된 계정이 있습니다. 기존 이메일 계정으로 로그인해주세요.'
+        });
+      }
+      user = email ? await getUserByEmail(email) : null;
+      if (!user) {
+        user = await createUser({
+          email: email || null,
+          password: null,
+          name: name || 'NoName',
+          phone: null
+        });
+      }
+      await createSocialIdentity({
+        user_id: user.id,
+        provider: 'google',
+        provider_user_id: providerUserId,
+        access_token,
+        refresh_token: tokenRes.data.refresh_token || null,
+        token_expires_at: tokenRes.data.expires_in
+          ? new Date(Date.now() + tokenRes.data.expires_in * 1000)
+          : null,
+        profile_data: payload
+      });
+    }
+
+    // 4️⃣ JWT 토큰 발급
+    const accessToken = jwtUtils.generateAccessToken({ id: user.id });
+    const refreshToken = jwtUtils.generateRefreshToken({ id: user.id });
+    await jwtUtils.saveRefreshToken(refreshToken, user.id);
+
+    return res.json({
+      accessToken,
+      refreshToken
+    });
+  } catch (error) {
+    console.error('[Google Callback Error]', error.response?.data ?? error);
+    return res.status(500).json({ message: 'Google 로그인 처리 중 오류가 발생했습니다.' });
+  }
+};
+
+exports.getProfile = (req, res) => {
+  res.status(200).json(req.user);
+};
