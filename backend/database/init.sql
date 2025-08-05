@@ -3,7 +3,7 @@ CREATE TABLE users (
   email            VARCHAR(255)    NOT NULL UNIQUE,
   password         VARCHAR(255),
   name             VARCHAR(100)    NOT NULL,
-  phone            VARCHAR(20)     NOT NULL UNIQUE,
+  phone            VARCHAR(20)     NULL UNIQUE,
 
   created_at       TIMESTAMP       DEFAULT CURRENT_TIMESTAMP,
   updated_at       TIMESTAMP       DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,

@@ -338,7 +338,8 @@ exports.googleCallback = async (req, res) => {
     // 4️⃣ JWT 토큰 발급
     const accessToken = jwtUtils.generateAccessToken({ id: user.id });
     const refreshToken = jwtUtils.generateRefreshToken({ id: user.id });
-    await jwtUtils.saveRefreshToken(refreshToken, user.id);
+
+    await redisClient.set(refreshToken, user.id, { EX: 7 * 24 * 3600 }); // 7일
 
     return res.json({
       accessToken,
