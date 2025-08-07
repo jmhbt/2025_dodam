@@ -7,10 +7,10 @@ on:
 env:
   AWS_REGION: us-east-1
   ECR_REPOSITORY: my-backend-repo
-  ECS_CLUSTER: my-cluster
-  ECS_SERVICE: my-service
+  ECS_CLUSTER: dodam-cluster         # 실제 클러스터 이름
+  ECS_SERVICE: dodam-backend         # 화면에 보인 서비스 이름
   ECS_TASK_DEFINITION: task-def.json
-  CONTAINER_NAME: my-container
+  CONTAINER_NAME: dodam-container    # 태스크 정의 내 실제 컨테이너 이름
 
 jobs:
   deploy:
@@ -27,10 +27,11 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
 
       - name: Login to Amazon ECR
-        uses: aws-actions/amazon-ecr-login@v2
         id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
 
       - name: Build, tag, and push Docker image
+        id: build-and-push
         env:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
           IMAGE_TAG: ${{ github.sha }}
@@ -40,12 +41,12 @@ jobs:
           echo "image=$ECR_REGISTRY/${{ env.ECR_REPOSITORY }}:$IMAGE_TAG" >> $GITHUB_OUTPUT
 
       - name: Render new task definition
-        uses: aws-actions/amazon-ecs-render-task-definition@v1
         id: render-def
+        uses: aws-actions/amazon-ecs-render-task-definition@v1
         with:
           task-definition: ${{ env.ECS_TASK_DEFINITION }}
           container-name: ${{ env.CONTAINER_NAME }}
-          image: ${{ steps.login-ecr.outputs.image }}
+          image: ${{ steps.build-and-push.outputs.image }}
 
       - name: Deploy new task definition
         uses: aws-actions/amazon-ecs-deploy-task-definition@v2
