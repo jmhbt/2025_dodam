@@ -11,7 +11,7 @@ env:
   ECR_REPOSITORY: my-backend-repo
   ECS_CLUSTER: dodam-cluster         # 실제 클러스터 이름
   ECS_SERVICE: dodam-backend         # 화면에 보인 서비스 이름
-  ECS_TASK_DEFINITION: task-def.json
+  ECS_TASK_DEFINITION: backend/.aws/task-def.json
   CONTAINER_NAME: dodam-container    # 태스크 정의 내 실제 컨테이너 이름
 
 jobs:
