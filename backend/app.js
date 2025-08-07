@@ -9,7 +9,7 @@ const redisClient = require('./utils/redisClient');
 const swaggerRouter = require('./swagger/swaggerRouter');
 const authRouter = require('./routes/authRoutes');
 const companiesRouter = require('./routes/companiesRoute');
-const healthRoute = require('./routes/healthRoute');
+const healthRouter = require('./routes/healthRoute');
 require('./utils/db'); 
 
 const app = express();
@@ -18,13 +18,14 @@ const app = express();
 app.use(express.json());
 app.use('/auth', authRouter); 
 app.use('/companies', companiesRouter);
+app.use('/', healthRouter);
 //app.use('/users', userRouter);
 app.use('/swagger-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec)); // 또는 '/docs'
 
-app.use('/', healthRoute);
+
 const PORT = process.env.PORT || 3000;
 
-app.listen(PORT, () => {
+app.listen(PORT, '0.0.0.0', () => {
   console.log(`✅ 서버 실행됨: http://localhost:${PORT}`);
 });
 
