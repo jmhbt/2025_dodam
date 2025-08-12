@@ -6,8 +6,7 @@ const cors = require('cors');
 const swaggerUi = require('swagger-ui-express');
 const YAML = require('yamljs');
 const swaggerSpec = YAML.load('./api_v2.yaml');
-
-const redisClient = require('./utils/redisClient');
+const { connectRedis } = require('./utils/redisClient');
 
 // 라우터 불러오기
 const authRouter = require('./routes/authRoutes');
@@ -43,6 +42,9 @@ app.use('/companies', companiesRouter);
 app.use('/', healthRouter);
 //app.use('/users', userRouter); // 필요 시 활성화
 app.use('/swagger-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+
+
+connectRedis().catch(console.error);
 
 // 서버 실행
 const PORT = process.env.PORT || 3000;
