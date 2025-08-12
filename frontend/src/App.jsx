@@ -8,6 +8,7 @@ import CompanyDetailPage from './pages/CompanyDetailPage';
 import CompanyEditPage from './pages/CompanyEditPage';
 import ProfilePage from './pages/ProfilePage';
 import { useContext } from 'react';
+import { Navigate } from 'react-router-dom';
 
 function Home() {
   const { user, logout } = useContext(AuthContext);
