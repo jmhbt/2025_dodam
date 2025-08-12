@@ -14,6 +14,7 @@ const {
   getUserByEmail,
   createSnsUser
 } = require('../services/userService');
+const db = require('../utils/db');
 
 const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
@@ -188,6 +189,9 @@ exports.emailVerify = async (req, res) => {
 
 
 exports.login = async (req, res) => {
+  console.debug('[LOGIN DEBUG] req.body', req.body);
+  console.debug('[LOGIN DEBUG] email', req.body.email);
+  console.debug('[LOGIN DEBUG] password length', req.body.password?.length);
   try {
     const { email, password } = req.body;
     if (!email || !password) {
@@ -441,6 +445,19 @@ exports.googleCallback = async (req, res) => {
   }
 };
 
-exports.getProfile = (req, res) => {
-  res.status(200).json(req.user);
+exports.getProfile = async (req, res) => {
+  try {
+    const userId = req.user?.id ?? req.user?.userId;
+    if (!userId) return res.status(401).json({ message: 'Unauthorized' });
+
+    const [rows] = await db.execute(
+      'SELECT id, email, name, role FROM users WHERE id = ?',
+      [userId]
+    );
+    if (rows.length === 0) return res.status(404).json({ message: 'User not found' });
+    res.json(rows[0]);
+  } catch (e) {
+    console.error('[GET /auth/me] error:', e);
+    res.status(500).json({ message: 'Server error' });
+  }
 };

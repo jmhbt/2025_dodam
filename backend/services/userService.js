@@ -25,13 +25,22 @@ exports.createUser = async ({ email, password, name, phone }) => {
   return result.insertId;
 };
 
-// 로그인용 사용자 조회 및 비밀번호 확인
+// 로그인용 사용자 조회 및 비밀번호 확인 (debug version)
 exports.getUser = async (email, plainPassword) => {
-  const [rows] = await db.execute('SELECT * FROM users WHERE email = ?', [email]);
+  console.log('[LOGIN DEBUG] email:', email);
+
+  const [rows] = await db.execute(
+    'SELECT * FROM users WHERE email = ?',
+    [email]
+  );
+  console.log('[LOGIN DEBUG] DB rows:', rows);
+
   if (rows.length === 0) return null;
 
   const user = rows[0];
   const isMatch = await comparePassword(plainPassword, user.password);
+  console.log('[LOGIN DEBUG] plainPassword match?:', isMatch);
+
   if (!isMatch) return null;
 
   return user;
@@ -109,4 +118,12 @@ exports.createSocialIdentity = async ({
       JSON.stringify(profileData),
     ]
   );
+};
+// role이 포함된 유저 정보 반환
+exports.getUserById = async (id) => {
+  const [rows] = await db.execute(
+    'SELECT id, email, name, phone, role FROM users WHERE id = ?',
+    [id]
+  );
+  return rows.length > 0 ? rows[0] : null;
 };
