@@ -2,14 +2,14 @@
 require('dotenv').config();
 const { createCluster } = require('redis');
 
-const redis = createCluster({
+const redisClient = createCluster({
   rootNodes: [{ url: process.env.REDIS_URL }],
   defaults: { socket: { tls: true } } // TLS 필수
 });
 
-redis.on('error', (e) => console.error('🔴 Redis Error:', e));
-redis.on('connect', () => console.log('🟢 Redis cluster connected'));
+redisClient.on('error', (e) => console.error('🔴 Redis Error:', e));
+redisClient.on('connect', () => console.log('🟢 Redis cluster connected'));
 
-(async () => { await redis.connect(); })();
+(async () => { await redisClient.connect(); })();
 
 module.exports = redisClient;
