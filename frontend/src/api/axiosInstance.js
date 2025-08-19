@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 const api = axios.create({
-  baseURL: 'http://localhost:3000', // ← 너의 백엔드 주소 (포트 포함)
+  baseURL: `${import.meta.env.VITE_API_BASE_URL}`, // ← 너의 백엔드 주소 (포트 포함)
 });
 
 // JWT 토큰이 있을 경우 Authorization 헤더에 자동 추가

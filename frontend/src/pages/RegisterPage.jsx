@@ -24,7 +24,7 @@ function RegisterPage() {
     setSuccess('');
 
     try {
-      const res = await axios.post('http://localhost:3000/auth/register', form);
+      const res = await axios.post(`${import.meta.env.VITE_API_BASE_URL}/auth/register`, form);
       setSuccess('회원가입이 완료되었습니다!');
       setTimeout(() => {
         navigate('/login');
