@@ -1,18 +1,19 @@
-name: ECS Fargate CI/CD
+name: Deploy Backend (ECS) + Frontend (S3/CloudFront)
 
 on:
   push:
     branches: [ main ]
   workflow_dispatch:
 
-
 env:
   AWS_REGION: us-east-1
+
+  # === Backend (ECS) ===
   ECR_REPOSITORY: my-backend-repo
-  ECS_CLUSTER: dodam-cluster         # 실제 클러스터 이름
-  ECS_SERVICE: dodam-backend         # 화면에 보인 서비스 이름
+  ECS_CLUSTER: dodam-cluster
+  ECS_SERVICE: dodam-backend
   ECS_TASK_DEFINITION: backend/.aws/task-def.json
-  CONTAINER_NAME: dodam-container    # 태스크 정의 내 실제 컨테이너 이름
+  CONTAINER_NAME: dodam-container
 
 jobs:
   deploy:
@@ -21,6 +22,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # AWS 자격 증명
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
@@ -28,6 +30,7 @@ jobs:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
 
+      # ===== Backend: ECS Fargate 배포 =====
       - name: Login to Amazon ECR
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v2
@@ -51,10 +54,37 @@ jobs:
           container-name: ${{ env.CONTAINER_NAME }}
           image: ${{ steps.build-and-push.outputs.image }}
 
-      - name: Deploy new task definition
+      - name: Deploy new task definition to ECS
         uses: aws-actions/amazon-ecs-deploy-task-definition@v2
         with:
           task-definition: ${{ steps.render-def.outputs.task-definition }}
           service: ${{ env.ECS_SERVICE }}
           cluster: ${{ env.ECS_CLUSTER }}
           wait-for-service-stability: true
+
+      # ===== Frontend: Vite 빌드 → S3 배포 → CloudFront 무효화 =====
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install & Build (Vite)
+        working-directory: frontend
+        run: |
+          npm ci
+          npm run build  # dist/ 생성 (정적 배포 산출물)
+
+      - name: Upload to S3 (sync dist/)
+        run: |
+          aws s3 sync ./frontend/dist s3://${{ secrets.S3_BUCKET }}/ --delete
+        # s3 sync는 폴더/버킷 간 변경분만 반영함
+        # https://docs.aws.amazon.com/cli/v1/userguide/cli-services-s3-commands.html
+
+      - name: Invalidate CloudFront cache
+        run: |
+          aws cloudfront create-invalidation \
+            --distribution-id ${{ secrets.CF_DISTRIBUTION_ID }} \
+            --paths "/*"
+        # https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/example_cloudfront_CreateInvalidation_section.html
