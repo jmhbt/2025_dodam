@@ -70,3 +70,5 @@
 1.  **Amazon ElastiCache (약 $24)**: 가장 큰 비용을 차지한 Redis 클러스터입니다. 
 2.  **Application Load Balancer (약 $7)**: ALB는 시간당 고정 비용이 발생합니다. (월 약 $18~$20)
 ![alt text](image.png)
+
+<img width="1920" height="1032" alt="image" src="https://github.com/user-attachments/assets/e2659448-d955-495c-a78a-d3f1c1a75455" />
