@@ -452,7 +452,7 @@ exports.getProfile = async (req, res) => {
     if (!userId) return res.status(401).json({ message: 'Unauthorized' });
 
     const [rows] = await db.execute(
-      'SELECT id, email, name, role FROM users WHERE id = ?',
+      'SELECT id, email, name FROM users WHERE id = ?',
       [userId]
     );
     if (rows.length === 0) return res.status(404).json({ message: 'User not found' });

@@ -1,11 +1,9 @@
 # 2025_dodam
 
 
-
-
 ***
 
-# 🚀 Full-Stack AWS 배포 프로젝트
+# 🚀 Full-Stack AWS 배포
 
 이 프로젝트는 Docker 컨테이너 기반의 백엔드와 Vite로 빌드된 프론트엔드를 AWS 환경에 배포하고, GitHub Actions를 통해 CI/CD 파이프라인을 자동화하는 전체 과정을 보여줍니다.
 
