@@ -49,5 +49,5 @@ connectRedis().catch(console.error);
 // 서버 실행
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, '0.0.0.0', () => {
-  console.log(`✅ 서버 실행됨: http://dodam-load-balancer-192678604.us-east-1.elb.amazonaws.com`);
+  console.log(`✅ 서버 실행됨: https://d3bsg44sjzmhl3.cloudfront.net`);
 });
