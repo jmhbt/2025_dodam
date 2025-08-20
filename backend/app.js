@@ -19,7 +19,7 @@ const app = express();
 // CORS 허용 도메인 설정
 const ALLOWED_ORIGINS = [
   process.env.FRONTEND_URL,
-  'https://d3bsg44sjzmhl3.cloudfront.net/'
+  'https://d3bsg44sjzmhl3.cloudfront.net'
 ];
 
 // 미들웨어 설정
