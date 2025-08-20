@@ -1,4 +1,4 @@
-const redisClient = require('../utils/redisClient');
+const { redis, connectRedis } = require('../utils/redisClient');
 const jwtUtils = require('../utils/jwtUtils');
 const { hashPassword } = require('../utils/hashUtils');
 const { isEmail } = require('../utils/validationUtils'); // 이메일 포맷 검사 유틸
@@ -18,6 +18,7 @@ const db = require('../utils/db');
 
 const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
+connectRedis();
 
 exports.register = async (req, res) => {
   try {
@@ -71,7 +72,7 @@ exports.SendEmailVerify = async (req, res) => {
 
     // Redis에 키(email:verify:<email>)로 저장, 만료시간 5분
     const redisKey = `email:verify:${email}`;
-    await redisClient.set(redisKey, code, { EX: 5 * 60 });
+    await redis.set(redisKey, code, { EX: 5 * 60 });
 
     // 이메일 전송 (비동기)
     // controllers/authController.js 중 sendEmail 호출 부분
@@ -157,7 +158,7 @@ exports.emailVerify = async (req, res) => {
 
     // Redis에 저장했던 키와 동일하게 생성
     const redisKey = `email:verify:${email}`;
-    const storedCode = await redisClient.get(redisKey);
+    const storedCode = await redis.get(redisKey);
 
     if (!storedCode) {
       // 코드가 없거나 TTL이 만료된 경우
@@ -174,7 +175,7 @@ exports.emailVerify = async (req, res) => {
     }
 
     // 검증 성공 시 Redis에서 코드 삭제
-    await redisClient.del(redisKey);
+    await redis.del(redisKey);
 
     return res
       .status(200)
@@ -211,7 +212,7 @@ exports.login = async (req, res) => {
     const accessToken = jwtUtils.generateAccessToken({ id: user.id });
     const refreshToken = jwtUtils.generateRefreshToken({ id: user.id });
 
-    await redisClient.set(refreshToken, user.id, { EX: 7 * 24 * 3600 }); // 7일
+    await redis.set(refreshToken, user.id, { EX: 7 * 24 * 3600 }); // 7일
 
     return res.status(200).json({ accessToken, refreshToken });
   } catch (error) {
@@ -228,7 +229,7 @@ exports.refresh = async (req, res) => {
     }
 
     const decoded = jwtUtils.verifyRefreshToken(refreshToken);
-    const stored = await redisClient.get(refreshToken);
+    const stored = await redis.get(refreshToken);
 
     if (!stored || stored !== decoded.id.toString()) {
       return res.status(403).json({ message: '유효하지 않은 Refresh Token입니다.' });
@@ -237,8 +238,8 @@ exports.refresh = async (req, res) => {
     const newAccess = jwtUtils.generateAccessToken({ id: decoded.id });
     const newRefresh = jwtUtils.generateRefreshToken({ id: decoded.id });
 
-    await redisClient.del(refreshToken);
-    await redisClient.set(newRefresh, decoded.id, { EX: 7 * 24 * 3600 });
+    await redis.del(refreshToken);
+    await redis.set(newRefresh, decoded.id, { EX: 7 * 24 * 3600 });
 
     return res.status(200).json({ accessToken: newAccess, refreshToken: newRefresh });
   } catch (error) {
@@ -255,7 +256,7 @@ exports.logout = async (req, res) => {
       return res.status(400).json({ message: 'Refresh Token이 필요합니다.' });
     }
 
-    await redisClient.del(refreshToken);
+    await redis.del(refreshToken);
 
     return res.sendStatus(204);
   } catch (error) {
@@ -343,7 +344,7 @@ exports.googleCallback = async (req, res) => {
     const accessToken = jwtUtils.generateAccessToken({ id: user.id });
     const refreshToken = jwtUtils.generateRefreshToken({ id: user.id });
 
-    await redisClient.set(refreshToken, user.id, { EX: 7 * 24 * 3600 }); // 7일
+    await redis.set(refreshToken, user.id, { EX: 7 * 24 * 3600 }); // 7일
 
     return res.json({
       accessToken,
